@@ -1,0 +1,7 @@
+
+# Generated documentation files
+docs/_build/*
+
+# Compiled Modules
+*.pyc
+*.so
