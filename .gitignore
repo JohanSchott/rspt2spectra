@@ -1,4 +1,7 @@
 
+# PyCharm files
+.idea
+
 # Generated documentation files
 docs/_build/*
 

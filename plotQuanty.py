@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 
-QuantyT (Quanty Tools)
+plotQuanty
 ======================
 
 This module contains functions which are useful to process data 
@@ -277,7 +277,7 @@ def quanty_2_rspt(x):
     n,m = np.shape(x)
     xR = np.zeros_like(x)
     if n%2 != 0 or m%2 != 0:
-        print 'Warning: matrix should have even dimensions.'
+        print('Warning: matrix should have even dimensions.')
     for i in range(n):
         for j in range(m):
             if i%2 == 0:
@@ -319,7 +319,7 @@ def write_quanty_opp(x,nf,op_name='Opp',ishift=0,jshift=0,
     """
     
     if not (mode == 'a' or mode == 'w'):
-        print 'Warning: writing mode not supported.'
+        print('Warning: writing mode not supported.')
         return
     
     # create the three lists needed in Quanty: i,j,e
@@ -345,8 +345,8 @@ def write_quanty_opp(x,nf,op_name='Opp',ishift=0,jshift=0,
     s += s_onerow
     s += '\n'
     if len(s_onerow) > 3000:
-        print ('Warning: Lua does not support '
-               'lines longer than 3000')
+        print('Warning: Lua does not support '
+              'lines longer than 3000')
     f = open(filename,mode) 
     f.write(s)
     f.close() 
@@ -379,7 +379,7 @@ def write_quanty_opps(x,nf,n=1,op_name='Opp',ishift=0,jshift=0,
     """
     
     if not (mode == 'a' or mode == 'w'):
-        print 'Warning: writing mode not supported.'
+        print('Warning: writing mode not supported.')
         return
     
     # create the three lists needed in Quanty: i,j,e
@@ -418,8 +418,8 @@ def write_quanty_opps(x,nf,n=1,op_name='Opp',ishift=0,jshift=0,
         s += s_onerow
         s += '\n'
         if len(s_onerow) > 3000:
-            print ('Warning: Lua does not support '
-                   'lines longer than 3000')
+            print('Warning: Lua does not support '
+                  'lines longer than 3000')
         f.write(s)
     f.close() 
 
@@ -626,14 +626,15 @@ def thermal_average(energies,observable,T=300):
     Thus, no not check e.g. if the Boltzmann weight 
     of the last state is small.
 
-    Input parameters:
-    energies - list(N)
+    Parameters
+    ----------
+    energies : list(N)
         energies[i] is the energy of state i.
-    observables - list(N,M)
+    observables : list(N,M)
         observables[i,j] is observable j of state i.
-    T - float
-        Temperature
-    tol - float
+    T : float
+        Temperature.
+    tol : float
         Tolerance for smallest weight for the last energy.
 
     '''

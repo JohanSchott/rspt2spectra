@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 
@@ -182,7 +182,7 @@ def print_matrix(x,space=7,ndecimals=3,fmt='f',cutoff=True):
     >>> from py4rspt.rsptt import print_matrix
     >>> from numpy.random import rand
     >>> x = rand(5,4)
-    >>> print x
+    >>> print(x)
     [[ 0.84266211  0.51373679  0.62017691  0.14055559]
     [ 0.63183783  0.06084673  0.05167614  0.16491208]
     [ 0.55515508  0.47868486  0.79075186  0.4892547 ]
