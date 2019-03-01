@@ -10,13 +10,37 @@ Welcome to rspt2spectra's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-.. automodule:: plotQuanty
-   :members:
-
-.. automodule:: rsptt
-   :members:
-
 .. automodule:: constants
+   :members:
+
+.. automodule:: d4h
+   :members:
+
+.. automodule:: dc
+   :members:
+
+.. automodule:: energies
+   :members:
+
+.. automodule:: h2Quanty
+   :members:
+
+.. automodule:: h2imp
+   :members:
+
+.. automodule:: hybridization
+   :members:
+
+.. automodule:: orbitals
+   :members:
+
+.. automodule:: plotSpectra
+   :members:
+
+.. automodule:: slater
+   :members:
+
+.. automodule:: soc
    :members:
 
 .. automodule:: unitarytransform

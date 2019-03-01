@@ -39,9 +39,11 @@ Let's order also the spherical harmonic orbitals (in the order it's done in RSPt
 
 .. math:: 4: Y_{2}^{2}
 
-Now we define for convienience the notation: :math:`d_i` and :math:`Y_{d,i}` for the :math:`i` cubic and spherical harmonic d-orbital respectively. 
+Now we define for convienience the notation: :math:`d_i` and :math:`Y_{d,i}` for the :math:`i` cubic and
+spherical harmonic d-orbital respectively.
 
-This makes it easy to write down a transformation matrix :math:`u_d`, with element :math:`u_{d,(i,j)}` representing the contribution of spherical harmonic :math:`i` to the cubic harmonic :math:`j`:
+This makes it easy to write down a transformation matrix :math:`u_d`, with element :math:`u_{d,(i,j)}` representing
+the contribution of spherical harmonic :math:`i` to the cubic harmonic :math:`j`:
 
 .. math:: \lvert d_j \rangle  = \sum_{i=0}^4 u_{d,(i,j)} \lvert Y_{d,i} \rangle, \; \mathrm{for} \; j \in \{0,1,2,3,4\},
 
@@ -75,7 +77,10 @@ which in matrix form becomes:
 
 .. math:: \tilde{A} = u_d^\dagger A u_d.
 
-Thus, transforming an observable from spherical to cubic harmonic basis is simple done by multiplying its matrix representation in the spherical harmonics basis from left :math:`u_d^\dagger` and from the right with :math:`u_d`.
+Thus, transforming an observable from spherical to cubic harmonic basis is
+simple done by multiplying its matrix representation in the spherical
+harmonics basis from left :math:`u_d^\dagger` and from the right
+with :math:`u_d`.
 
 Due to the orthogonality of the columns and the rows in :math:`u_d`, we can also easily transform back:
 
@@ -101,9 +106,12 @@ Let's order also the spherical harmonic orbitals (in the order it's done in RSPt
 
 .. math:: 2: Y_1^{1}
 
-Now we define for convienience the notation: :math:`p_i` and :math:`Y_{p,i}` for the :math:`i` cubic and spherical harmonic respectively. 
+Now we define for convienience the notation: :math:`p_i` and :math:`Y_{p,i}`
+for the :math:`i` cubic and spherical harmonic respectively.
 
-This makes it easy to write down a transformation matrix :math:`u_p`, with element :math:`u_{p,(i,j)}` representing the contribution of spherical harmonics :math:`i` to the cubic harmonic :math:`j`:
+This makes it easy to write down a transformation matrix :math:`u_p`,
+with element :math:`u_{p,(i,j)}` representing the contribution of
+spherical harmonics :math:`i` to the cubic harmonic :math:`j`:
 
 .. math:: \lvert d_j \rangle  = \sum_{i=0}^4 u_{p,(i,j)} \lvert Y_{p,i} \rangle, \; \mathrm{for} \; j \in \{0,1,2,3,4\},
 
@@ -111,12 +119,16 @@ with
 
 .. math:: u_p =  \begin{bmatrix}    \frac{i}{\sqrt{2}}       & \frac{1}{\sqrt{2}} & 0  \\    0       & 0 & 1  \\     \frac{i}{\sqrt{2}}       & \frac{-1}{\sqrt{2}} & 0   \end{bmatrix} 
 
-We can define a transformation matrix between cubic and spherical harmonics, as we did for the d-orbitals.
-Thus a observable in cubic harmonics becomes: :math:`\tilde{A} = u_p^\dagger A u_p`, where :math:`u_p` is the transformation matrix for p-orbitals. 
+We can define a transformation matrix between cubic and spherical harmonics,
+as we did for the d-orbitals.
+Thus a observable in cubic harmonics becomes:
+:math:`\tilde{A} = u_p^\dagger A u_p`, where :math:`u_p`
+is the transformation matrix for p-orbitals.
 
 p- and d-orbitals.
 
-An observable with a d-oribtal as bra and a p-orbital as a ket can be expressed in cubic harmonics:
+An observable with a d-oribtal as bra and a p-orbital as a ket can be
+expressed in cubic harmonics:
 
 .. math:: \tilde{A}_{i,j} = \langle d_i \lvert \hat{A} \rvert p_j \rangle = \sum_{k=0}^4 \bar{u}_{d,(k,i)} \langle Y_{d,k} \lvert \hat{A} \sum_{n=0}^2 u_{p,(n,j)} \lvert Y_{p,n} \rangle  \\ = \sum_{k,n} \bar{u}_{d,(k,i)} u_{p,(n,j)} \langle Y_{d,k} \lvert \hat{A} \rvert Y_{p,n} \rangle  = \sum_{k,n} \bar{u}_{d,(k,i)} A_{k,n} u_{p,(n,j)} \\ = \sum_{k=0}^4 (u_d^\dagger)_{(i,k)} \sum_{n=0}^2 A_{k,n} u_{p,(n,j)}, 
 
@@ -124,9 +136,13 @@ which in matrix form becomes:
 
 .. math:: \tilde{A} = u_d^\dagger A u_p.
 
-Thus, transforming an observable from spherical to cubic harmonic basis is simple done by multiplying its matrix representation in the spherical harmonics basis from left :math:`u_d^\dagger` and from the right with :math:`u_p`.
+Thus, transforming an observable from spherical to cubic harmonic basis
+is simple done by multiplying its matrix representation in the
+spherical harmonics basis from left
+:math:`u_d^\dagger` and from the right with :math:`u_p`.
 
-Due to the orthogonality of the columns and the rows in :math:`u_d` and :math:`u_p`, we can also easily transform back:
+Due to the orthogonality of the columns and the rows in
+:math:`u_d` and :math:`u_p`, we can also easily transform back:
 
 .. math:: A = u_d \tilde{A} u_p^\dagger.
 
@@ -134,12 +150,10 @@ Due to the orthogonality of the columns and the rows in :math:`u_d` and :math:`u
 """
 
 import numpy as np
+import sys
 
-__author__ = "Johan Schott"
-__email__ = "johan.schott@gmail.com"
-__status__ = "Development"
 
-def rotate(d,r_left,r_right):
+def rotate(d, r_left, r_right):
     r"""
     Return matrix rotated from left and right. 
     
@@ -163,17 +177,18 @@ def rotate(d,r_left,r_right):
     
     """
     # Remove spin 
-    dm = d[::2,::2]
+    dm = d[::2, ::2]
     # Rotate to spherical harmonics basis 
     # in the rotated coordinate system
-    dmp = np.dot(np.transpose(np.conj(r_left)),np.dot(dm,r_right))
+    dmp = np.dot(np.transpose(np.conj(r_left)), np.dot(dm, r_right))
     # Add spin 
-    dp = np.zeros(2*np.array(np.shape(dmp)),dtype=np.complex)
-    dp[::2,::2] = dmp
-    dp[1::2,1::2] = dmp
+    dp = np.zeros(2*np.array(np.shape(dmp)), dtype=np.complex)
+    dp[::2, ::2] = dmp
+    dp[1::2, 1::2] = dmp
     return dp
 
-def get_spherical_2_cubic_matrix(spinpol=False,l=2):
+
+def get_spherical_2_cubic_matrix(spinpol=False, l=2):
     r"""
     Return unitary ndarray for transforming from spherical 
     to cubic harmonics.
@@ -199,31 +214,34 @@ def get_spherical_2_cubic_matrix(spinpol=False,l=2):
 
     """
     if l == 1:
-        u = np.zeros((3,3),dtype=np.complex)
-        u[0,0] = 1j/np.sqrt(2)
-        u[2,0] = 1j/np.sqrt(2)
-        u[0,1] = 1/np.sqrt(2)
-        u[2,1] = -1/np.sqrt(2)
-        u[1,2] = 1
+        u = np.zeros((3, 3), dtype=np.complex)
+        u[0, 0] = 1j/np.sqrt(2)
+        u[2, 0] = 1j/np.sqrt(2)
+        u[0, 1] = 1/np.sqrt(2)
+        u[2, 1] = -1/np.sqrt(2)
+        u[1, 2] = 1
     elif l == 2:
-        u = np.zeros((5,5),dtype=np.complex)
-        u[2,0] = 1
-        u[[0,-1],1] = 1/np.sqrt(2)
-        u[1,2] = -1j/np.sqrt(2)
-        u[-2,2] = -1j/np.sqrt(2)
-        u[1,3] = 1/np.sqrt(2)
-        u[-2,3] = -1/np.sqrt(2)
-        u[0,4] = 1j/np.sqrt(2)
-        u[-1,4] = -1j/np.sqrt(2)
+        u = np.zeros((5, 5), dtype=np.complex)
+        u[2, 0] = 1
+        u[[0, -1], 1] = 1/np.sqrt(2)
+        u[1, 2] = -1j/np.sqrt(2)
+        u[-2, 2] = -1j/np.sqrt(2)
+        u[1, 3] = 1/np.sqrt(2)
+        u[-2, 3] = -1/np.sqrt(2)
+        u[0, 4] = 1j/np.sqrt(2)
+        u[-1, 4] = -1j/np.sqrt(2)
+    else:
+        sys.exit('This angular momentum is not implemented yet')
     if spinpol:
-        n,m = np.shape(u)
-        U = np.zeros((2*n,2*m),dtype=np.complex)
-        U[0:n,0:m] = u
-        U[n:,m:] = u
-        u = U
+        n, m = np.shape(u)
+        uSpin = np.zeros((2*n, 2*m), dtype=np.complex)
+        uSpin[0:n, 0:m] = u
+        uSpin[n:, m:] = u
+        u = uSpin
     return u
 
-def get_spinpol_and_ls(n,m):
+
+def get_spinpol_and_ls(n, m):
     r"""
     Calculate if spinpolarized and which angular momentum 
     the matrix dimensions n,m corresponds to.
@@ -243,13 +261,13 @@ def get_spinpol_and_ls(n,m):
          angular momentum numbers
 
     """
-    if n%2 == 0:
+    if n % 2 == 0:
         spinpol = True
-        ls = [(n/2-1)/2,(m/2-1)/2] 
+        ls = [(n/2-1)/2, (m/2-1)/2]
     else:
         spinpol = False
-        ls = [(n-1)/2,(m-1)/2]
-    return spinpol,ls
+        ls = [(n-1)/2, (m-1)/2]
+    return spinpol, ls
     
     
 def spherical_2_cubic(a):
@@ -270,11 +288,12 @@ def spherical_2_cubic(a):
          Observable, expressed in cubic harmonics.
 
     """
-    spinpol,ls = get_spinpol_and_ls(*np.shape(a))
-    u_bra = get_spherical_2_cubic_matrix(spinpol=spinpol,l=ls[0])
-    u_ket = get_spherical_2_cubic_matrix(spinpol=spinpol,l=ls[1])
-    at = np.dot(np.transpose(np.conj(u_bra)),np.dot(a,u_ket))
+    spinpol, ls = get_spinpol_and_ls(*np.shape(a))
+    u_bra = get_spherical_2_cubic_matrix(spinpol=spinpol, l=ls[0])
+    u_ket = get_spherical_2_cubic_matrix(spinpol=spinpol, l=ls[1])
+    at = np.dot(np.transpose(np.conj(u_bra)),np.dot(a, u_ket))
     return at
+
 
 def cubic_2_spherical(at):
     r"""
@@ -294,9 +313,8 @@ def cubic_2_spherical(at):
         Observable, expressed in spherical harmonics.
 
     """
-    spinpol,ls = get_spinpol_and_ls(*np.shape(at))
-    u_bra = get_spherical_2_cubic_matrix(spinpol=spinpol,l=ls[0])
-    u_ket = get_spherical_2_cubic_matrix(spinpol=spinpol,l=ls[1])
-    a = np.dot(u_bra,np.dot(at,np.transpose(np.conj(u_ket))))
+    spinpol, ls = get_spinpol_and_ls(*np.shape(at))
+    u_bra = get_spherical_2_cubic_matrix(spinpol=spinpol, l=ls[0])
+    u_ket = get_spherical_2_cubic_matrix(spinpol=spinpol, l=ls[1])
+    a = np.dot(u_bra, np.dot(at,np.transpose(np.conj(u_ket))))
     return a
-

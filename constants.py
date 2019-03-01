@@ -9,9 +9,6 @@ This module contains some useful constants in physics.
 
 """
 
-__author__ = "Johan Schott"
-__email__ = "johan.schott@gmail.com"
-__status__ = "Development"
 
 # Convert Bohr to angstrom. Unit: Angstrom/Bohr radius.
 ANGSTROM = 0.529177  
