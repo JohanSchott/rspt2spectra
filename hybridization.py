@@ -47,6 +47,7 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
         plt.ylabel(r'$\frac{-1}{\pi}$ Im $\Delta(\omega)$')
         plt.xlim(xlim)
         plt.grid(color='0.9')
+        plt.title("Hybridization function, spin resolved")
         plt.show()
         # Orbital resolved
         fig = plt.figure()
@@ -60,14 +61,15 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
         plt.xlabel('$\omega$   (eV)')
         plt.xlim(xlim)
         plt.tight_layout()
+        plt.title("Hybridization function, orbital resolved")
         plt.show()
         # Orbital and spin resolved
         fig = plt.figure()
         for i in range(norb):
-            hyb_dn = -1/pi*x[mask, 4+i]*eV
             # Plot down spin with minus sign
+            hyb_dn = -1/pi*x[mask, 4+i]*eV
+            hyb_up = -1/pi*x[mask, 4+norb+i]*eV
             plt.plot(wp, -hyb_dn, c='C' + str(i), label=str(i))
-            hyb_up = -1 / pi * x[mask, 4+norb+i]*eV
             plt.plot(wp, hyb_up, c='C' + str(i))
         plt.ylabel(r'$\frac{-1}{\pi}$ Im $\Delta(\omega)$')
         plt.grid(color='0.9')
@@ -75,14 +77,15 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
         plt.xlabel('$\omega$   (eV)')
         plt.xlim(xlim)
         plt.tight_layout()
+        plt.title("Hybridization function, spin and orbital resolved")
         plt.show()
         # Orbital and spin resolved
         fig, axes = plt.subplots(nrows=norb, sharex=True, sharey=True)
         for i, ax in enumerate(axes):
-            hyb_dn = -1/pi*x[mask, 4+i]*eV
             # Plot down spin with thinner line
-            ax.plot(wp, hyb_dn, lw=0.7, c='C' + str(i))
+            hyb_dn = -1/pi*x[mask, 4+i]*eV
             hyb_up = -1/pi*x[mask, 4+norb+i]*eV
+            ax.plot(wp, hyb_dn, lw=0.7, c='C' + str(i))
             ax.plot(wp, hyb_up, c='C' + str(i), label=str(i))
             ax.grid(color='0.9')
             ax.legend()
@@ -90,6 +93,7 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
         axes[-1].set_xlabel('$\omega$   (eV)')
         axes[-1].set_xlim(xlim)
         plt.tight_layout()
+        axes[0].set_title("Hybridization function, spin and orbital resolved")
         plt.show()
     else:
         # Orbital resolved
@@ -129,7 +133,7 @@ def plot_discrete_hyb(w,hyb_im,hyb_im_rspt,eb,vb,wborder,nc,spinpol,xlim):
         v_max_plot = 1.07 * np.max(vb[i])
         ax_v.set_ylim([0, v_max_plot])
         ax.grid(color='0.92')
-    axarr[int(nc / 2)].set_ylabel(r'-$\frac{1}{\pi}\mathrm{Im}'
+    axarr[nc//2].set_ylabel(r'-$\frac{1}{\pi}\mathrm{Im}'
                                   '\Delta(\omega)$      (eV)')
     # Plot continues hybridization function
     for i, ax in enumerate(axarr):
@@ -139,12 +143,16 @@ def plot_discrete_hyb(w,hyb_im,hyb_im_rspt,eb,vb,wborder,nc,spinpol,xlim):
     axarr[-1].set_xlabel('E   (eV)')
     axarr[0].set_xlim(xlim)
     axarr[0].legend(loc='best')
-    axarr[0].set_title("Orbital resolved hybridization")
+    if spinpol:
+        axarr[0].set_title("Spin and orbital resolved hybridization")
+    else:
+        axarr[0].set_title("Orbital resolved hybridization")
     plt.subplots_adjust(left=0.17, bottom=0.10, right=0.83,
                         top=0.95, hspace=0.0, wspace=0)
     plt.show()
 
     if spinpol:
+        norb = nc//2
         fig, axarr = plt.subplots(norb, figsize=(6, 7), sharex=True)
         # Loop over axes
         for i, ax in enumerate(axarr):
@@ -182,6 +190,7 @@ def plot_discrete_hyb(w,hyb_im,hyb_im_rspt,eb,vb,wborder,nc,spinpol,xlim):
         axarr[-1].set_xlabel('E   (eV)')
         axarr[0].set_xlim(xlim)
         axarr[0].legend(loc='best')
+        axarr[0].set_title("Spin and orbital resolved hybridization")
         plt.subplots_adjust(left=0.17, bottom=0.10, right=0.83,
                             top=0.98, hspace=0.0, wspace=0)
         plt.show()
@@ -205,11 +214,12 @@ def plot_discrete_hyb(w,hyb_im,hyb_im_rspt,eb,vb,wborder,nc,spinpol,xlim):
                     bbox={'facecolor': 'white', 'alpha': 0.9,
                           'pad': 2})
             ax.set_ylim([-y_max, y_max])
-        axarr[0].set_ylabel(r'-$\frac{1}{\pi}\mathrm{Im}'
+        axarr[2].set_ylabel(r'-$\frac{1}{\pi}\mathrm{Im}'
                             '\Delta(\omega)$  (eV)')
         axarr[-1].set_xlabel('E   (eV)')
         axarr[0].set_xlim(xlim)
         axarr[0].legend(loc=1)
+        axarr[0].set_title("Spin and orbital resolved hybridization")
         plt.subplots_adjust(left=0.16, bottom=0.16, right=0.99,
                             top=0.99, hspace=0, wspace=0)
         plt.show()
@@ -302,7 +312,6 @@ def get_vb_and_eb(w, hyb, wborder):
 
     """
     nb = len(wborder[0,:,0])
-    print(np.shape(wborder))
     # Check so that energy windows do not overlap
     # Loop over correlated orbitals
     for i in range(np.shape(wborder)[0]):

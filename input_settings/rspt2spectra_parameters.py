@@ -14,6 +14,21 @@ Then execute the finiteH0.py script (which will read this file).
 import numpy as np
 from rspt2spectra.constants import eV
 
+
+def get_wborder(n_val=10, n_con=1, wlim_val=(-8,0), wlim_con=(0,1), n_orb=5):
+    def borders_to_sections(bs):
+        section = []
+        for i in range(len(bs[:-1])):
+            section.append([bs[i], bs[i+1]])
+        return section
+    wborder = []
+    b_val = np.linspace(wlim_val[0], wlim_val[1], n_val+1)
+    b_con = np.linspace(wlim_con[0], wlim_con[1], n_con+1)
+    for i_orb in range(n_orb):
+        wborder.append(borders_to_sections(b_val) + borders_to_sections(b_con))
+    wborder = np.array(wborder)
+    return wborder
+
 # Verbose parameters. True or False
 verbose_fig = True
 verbose_text = True
@@ -29,8 +44,9 @@ eim = 0.005*eV
 # Correlated orbitals to study, e.g.:
 # '0102010100' or
 # '0102010103' or
-# '0102010103-obs'
-# '0102010100-obs1'
+# '0102010103-obs' or
+# '0102010100-obs1' or
+# '0102010100-obs'
 basis_tag = '0102010100-obs1'
 
 # User defined local basis keyword.
@@ -44,27 +60,30 @@ spinpol = False
 # If to analyze spin averaged calculations.
 # This means spin-polarization, if any, is only from
 # the hybridization and the self-energy
+# If spinpol = False, this variable has no purpose.
 spinavg = True
 
-# Specify either bath energies or a energy window for each bath energy.
-# It might be slightly more convienient for impurityModel scripts if 
-# the bath sets are ordered such that unoccupied bath states 
-# (e.i. those with positive energy) are put/stored after the occupied bath 
-# states.
-# Bath energies. One row contains the bath energies corresponding to one impurity orbital.
+# Specify either initial bath energies or a energy window for each bath energy.
+# It probably will be slightly more convienient for the impurityModel script 
+# to read the output from finiteH0.py if the bath sets here are ordered such 
+# that unoccupied bath states (e.i. those with positive energy) are put/stored 
+# after the occupied bath sets.
+# Initial bath energies. One row contains the bath energies corresponding to 
+# one impurity orbital.
 # Example with one (1+0) bath orbital per impurity orbital
-#eb = np.array([[-3],
-#               [-6],
-#               [-3],
-#               [-6],
-#               [-5]],dtype=np.float)
+#eb_initial = np.array([[-3],
+#                       [-6],
+#                       [-3],
+#                       [-6],
+#                       [-5]],dtype=np.float)
 # Example with two (1+1) bath orbitals per impurity orbital
-#eb = np.array([[-3,2],
-#               [-6,4],
-#               [-3,2],
-#               [-6,4],
-#               [-5,3]],dtype=np.float)
-# Energy windows for bath energies. One row contains the energies corresponding to one impurity orbital.
+#eb_initial = np.array([[-3,2],
+#                       [-6,4],
+#                       [-3,2],
+#                       [-6,4],
+#                       [-5,3]],dtype=np.float)
+# Energy windows for bath energies. One row contains the energies corresponding
+# to one impurity orbital.
 # Example with one (1+0)bath orbital per impurity orbital
 #wborder = np.array([[[-8,-1]],
 #                    [[-8,-1]],
@@ -77,12 +96,24 @@ wborder = np.array([[[-8,-2.5], [-2.5,-1]],
                     [[-8,-2.5], [-2.5,-1]],
                     [[-8,-4],   [-4,-1]],
                     [[-8,-4],   [-4,-1]]],dtype=np.float)
+# Example with two (1+1) bath orbitals per impurity orbital
+#wborder = np.array([[[-8,0], [0,1]],
+#                    [[-8,0], [0,1]],
+#                    [[-8,0], [0,1]],
+#                    [[-8,0], [0,1]],
+#                    [[-8,0], [0,1]]],dtype=np.float)
 # Example with three (3+0) bath orbitals per impurity orbital
 #wborder = np.array([[[-8,-4],[-4,-2.5],[-2.5,-1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1]]],dtype=np.float)
+# Example with three (2+1) bath orbitals per impurity orbital
+#wborder = np.array([[[-8,-2.5],[-2.5,-1],[0,1]],
+#                    [[-8,-4],[-4,-1],[0,1]],
+#                    [[-8,-2.5],[-2.5,-1],[0,1]],
+#                    [[-8,-4],[-4,-1],[0,1]],
+#                    [[-8,-4],[-4,-1],[0,1]]],dtype=np.float)
 # Example with four (4+0) bath orbitals per impurity orbital
 #wborder = np.array([[[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1]],
@@ -90,11 +121,19 @@ wborder = np.array([[[-8,-2.5], [-2.5,-1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1]]],dtype=np.float)
 # Example with four (3+1) bath orbitals per impurity orbital
-#wborder = np.array([[[-8,-4],[-4,-2.5],[-2.5,-1],[1,3]],
-#                    [[-8,-4],[-4,-2.5],[-2.5,-1],[1,3]],
-#                    [[-8,-4],[-4,-2.5],[-2.5,-1],[1,3]],
-#                    [[-8,-4],[-4,-2.5],[-2.5,-1],[1,3]],
-#                    [[-8,-4],[-4,-2.5],[-2.5,-1],[1,3]]],dtype=np.float)
+#wborder = np.array([[[-8,-4],[-4,-2.5],[-2.5,-1],[0,1]],
+#                    [[-8,-4],[-4,-2.5],[-2.5,-1],[0,1]],
+#                    [[-8,-4],[-4,-2.5],[-2.5,-1],[0,1]],
+#                    [[-8,-4],[-4,-2.5],[-2.5,-1],[0,1]],
+#                    [[-8,-4],[-4,-2.5],[-2.5,-1],[0,1]]],dtype=np.float)
+# Example with four (4+1) bath orbitals per impurity orbital
+#wborder = np.array([[[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]],
+#                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]],
+#                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]],
+#                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]],
+#                    [[-8,-5],[-5,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]]],dtype=np.float)
+# Example with four (10+1) bath orbitals per impurity orbital
+#wborder = get_wborder(n_val=10, n_con=1)
 
 # Plot energy range. Only used for plotting.
 xlim = [-9,4]

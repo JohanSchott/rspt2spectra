@@ -19,6 +19,93 @@ from numba import jit
 import matplotlib.pylab as plt
 
 from . import hybridization
+from .constants import eV
+
+def read_self_energy(file_re_sig, file_im_sig, file_re_sig_offd,
+                     file_im_sig_offd, spinpol):
+    """
+    Return dynamic self-energies.
+    """
+    # Read diagonal part of the self-energy from file
+    sigma = eV * (np.loadtxt(file_re_sig)[:, 4:]
+                  + 1j * np.loadtxt(file_im_sig)[:, 4:]).T
+    nc, nw = np.shape(sigma)
+    norb = nc//2 if spinpol else nc
+    # Construct self-energy
+    sigmaM = np.zeros((nc, nc, nw), dtype=np.complex)
+    # Diagonal
+    for i in range(nc):
+        sigmaM[i, i, :] = sigma[i, :]
+    # Read off-diagonal part of the self-energy
+    re = eV * np.loadtxt(file_re_sig_offd)[:, 1:]
+    im = eV * np.loadtxt(file_im_sig_offd)[:, 1:]
+    # Off-diagonal
+    n = 0
+    for j in range(nc):
+        if spinpol:
+            if j < norb:
+                irange = range(j) + range(j+1, norb)
+            else:
+                irange = range(norb, j) + range(j+1, nc)
+        else:
+            irange = range(j) + range(j+1, norb)
+        for i in irange:
+            sigmaM[i, j, :] = re[:, n] + im[:, n]*1j
+            n += 1
+    return
+
+
+def get_imp_h(e_onsite, eb, vb, spinpol):
+    """
+    Return impurity Hamiltonian.
+    """
+    no = len(e_onsite)
+    nc, nb = np.shape(eb)
+    norb = nc//2 if spinpol else nc
+    # Initialize the full Hamiltonian, including spin
+    h = np.zeros(2*norb*(1 + nb)*np.array([1, 1]),dtype=np.complex)
+
+    # On-site energies of correlated orbitals
+    if no == 2*norb:
+        for i in range(no):
+            h[i, i] = e_onsite[i]
+    elif no == norb:
+        for i in range(no):
+            h[i, i] = e_onsite[i]
+            h[no + i, no + i] = e_onsite[i]
+
+    # Bath energies
+    if spinpol:
+        for j in range(nb):
+            for i in range(nc):
+                k = nc + i + nc*j
+                h[k, k] = eb[i, j]
+    else:
+        for j in range(nb):
+            for i in range(nc):
+                k = 2*nc + i + 2*nc*j
+                h[k, k] = eb[i, j]
+                h[k + no, k + no] = eb[i, j]
+
+    # Hybridization hoppings
+    if spinpol:
+        for j in range(nb):
+            for i in range(nc):
+                k = nc + i + nc*j
+                h[k, i] = vb[i, j]
+                h[i, k] = np.conj(vb[i, j])
+    else:
+        for j in range(nb):
+            for i in range(nc):
+                k = 2*nc + i + 2*nc*j
+                h[k, i] = vb[i, j]
+                h[i, k] = np.conj(vb[i, j])
+                h[k + no, i + no] = vb[i, j]
+                h[i + no, k + no] = np.conj(vb[i, j])
+
+    # Make sure Hamiltonian is hermitian
+    assert np.all(h == np.conj(h.T))
+    return h
 
 def integrate(x, y, xmin=None, xmax=None):
     """
@@ -69,16 +156,17 @@ def plot_pdos0_2(w,pdos1,pdos2,nc,spinpol,xlim):
         # Plot non-interacting PDOS
         # Down spin with negative sign
         plt.figure()
-        for i in range(nc/2):
+        for i in range(nc//2):
             # Down spin
             plt.plot(w, -pdos1[i, :], c='C' + str(i), label=str(i))
             plt.plot(w, -pdos2[i, :], '--', c='C' + str(i))
             # Up spin
-            plt.plot(w, pdos1[nc / 2 + i, :], c='C' + str(i))
-            plt.plot(w, pdos2[nc / 2 + i, :], '--', c='C' + str(i))
+            plt.plot(w, pdos1[nc//2 + i, :], c='C' + str(i))
+            plt.plot(w, pdos2[nc//2 + i, :], '--', c='C' + str(i))
         plt.legend()
         plt.ylabel('PDOS$_0$')
         plt.xlim(xlim)
+        plt.title("Orbital resolved PDOS$_0$. -:RSPt, --:discrete with e_rspt")
         plt.show()
 
 def plot_pdos0_3(w,p0d_rspt,p0d_initial,p0d,nc,spinpol,xlim):
@@ -109,6 +197,7 @@ def plot_pdos0_3(w,p0d_rspt,p0d_initial,p0d,nc,spinpol,xlim):
         plt.legend()
         plt.ylabel('PDOS$_0$')
         plt.xlim(xlim)
+        plt.title("Orbital resolved PDOS$_0$. -:p0d_rspt, --:p0d")
         plt.show()
 
     # Orbital resolved
@@ -194,6 +283,141 @@ def plot_pdos0_4(w,p0d_rspt,p0d,p0_rspt,p0,norb,spinpol,xlim):
         plt.show()
 
 
+def plot_pdos0_from_off_diagonal_hyb(w, p0d_rspt, pd_rspt, p0d, xlim):
+    plt.figure()
+    plt.plot(w, np.sum(p0d_rspt, axis=0), label='p0d_rspt')
+    plt.plot(w, np.sum(p0_rspt, axis=0), label='p0_rspt')
+    plt.plot(w, np.sum(p0d, axis=0), label='p0d')
+    plt.legend()
+    plt.ylabel('PDOS$_0$')
+    plt.xlim(xlim)
+    plt.show()
+
+
+def plot_pdos_2(w, p_rspt, p, xlim):
+    """
+    Plot interactive PDOSes.
+    """
+    nc = np.shape(p)[0]
+    # Plot trace
+    plt.figure()
+    plt.plot(w, np.sum(p_rspt, axis=0), label='p_rspt')
+    plt.plot(w, np.sum(p, axis=0), label='p')
+    plt.legend()
+    plt.ylabel('PDOS')
+    plt.xlim(xlim)
+    plt.show()
+    # Plot orbital resolved PDOS
+    fig, axes = plt.subplots(nrows=nc, sharex=True, sharey=True)
+    for i in range(nc):
+        axes[i].plot(w, p_rspt[i, :], label='p_rspt')
+        axes[i].plot(w, p[i, :], label='p')
+    axes[0].legend()
+    axes[-1].set_xlabel('energy  (eV)')
+    plt.xlim(xlim)
+    plt.subplots_adjust(hspace=0)
+    plt.show()
+
+
+def plot_pdos_3(w, p_rspt, p_rspt_alg1, p_rspt_alg2, off_diag_hyb, spinpol):
+    """
+    Plot interactive PDOS.
+    """
+    nc = np.shape(p_rspt)[0]
+    norb = nc//2 if spinpol else nc
+    plt.figure()
+    plt.plot(w, np.sum(p_rspt, axis=0), label='RSPt')
+    if off_diag_hyb:
+        plt.plot(w, np.sum(p_rspt_alg1, axis=0),'--', label='RSPt, alg1')
+    plt.plot(w, np.sum(p_rspt_alg2, axis=0), label='RSPt, alg2')
+    plt.legend()
+    plt.ylabel('PDOS')
+    plt.xlim(xlim)
+    plt.show()
+
+    if spinpol:
+        plt.figure()
+        plt.plot(w, -np.sum(p_rspt[:norb, :], axis=0),
+                 c='C0', label='RSPt')
+        if off_diag_hyb:
+            plt.plot(w, -np.sum(p_rspt_alg1[:norb, :], axis=0),
+                     '--', c='C1', label='RSPt, alg1')
+        plt.plot(w, -np.sum(p_rspt_alg2[:norb, :], axis=0),
+                 c='C2', label='RSPt, alg2')
+        plt.plot(w, np.sum(p_rspt[norb:, :], axis=0), c='C0')
+        if off_diag_hyb:
+            plt.plot(w, np.sum(p_rspt_alg1[norb:, :], axis=0),
+                     '--', c='C1')
+        plt.plot(w, np.sum(p_rspt_alg2[norb:, :], axis=0), c='C2')
+        plt.legend()
+        plt.ylabel('PDOS')
+        plt.xlim(xlim)
+        plt.show()
+
+        plt.figure()
+        for i in range(norb):
+            plt.plot(w, -p_rspt[i, :], c='C' + str(i), label=str(i))
+            plt.plot(w, p_rspt[norb + i, :], c='C' + str(i))
+        plt.legend()
+        plt.ylabel('PDOS')
+        plt.xlim(xlim)
+        plt.show()
+
+
+def plot_pdos_5(es, w, eim, p_rspt, hyb, sigmaM, spinpol):
+    """
+    Plot interactive PDOSes.
+
+    Parameters
+    ----------
+    es : list
+        Contains on-site energy sets: [e_rspt, e0d, e0, e]
+    w : (N) array
+    eim : float
+    p_rspt : (M,N) array
+    hyb : (M,N) array
+    sigmaM : (M,M,N) array
+    spinpol : boolean
+
+    """
+    labels = ['$\epsilon_\mathrm{rspt}$', '$\epsilon_{0,d}$',
+              '$\epsilon_0$', '$\epsilon$']
+    # Plot trace.
+    # Verify different on-site energies by looking at
+    # the interacting PDOS
+    plt.figure()
+    plt.plot(w, np.sum(p_rspt, axis=0), 'k', label='RSPt')
+    for en, label in zip(es, labels):
+        if nc == no:
+            tmp = np.diagonal(energies.pdos(w, eim, en, hyb, sigmaM)).T
+        elif nc == 2 * no:
+            tmp = np.diagonal(energies.pdos(w, eim, 2 * list(en),
+                                         hyb, sigmaM)).T
+        plt.plot(w, np.sum(tmp, axis=0), label=label)
+    plt.legend()
+    plt.xlabel('energy  (eV)')
+    plt.xlim(xlim)
+    plt.show()
+    # Plot up and down spin
+    if spinpol:
+        plt.figure()
+        plt.plot(w, -np.sum(p_rspt[:norb, :], axis=0),
+                 c='k', label='RSPt')
+        plt.plot(w, np.sum(p_rspt[norb:, :], axis=0), c='k')
+        for k, (en, label) in enumerate(zip(es, labels)):
+            if nc == no:
+                tmp = np.diagonal(energies.pdos(w, eim, en, hyb, sigmaM)).T
+            elif nc == 2 * no:
+                tmp = np.diagonal(energies.pdos(w, eim, 2 * list(en),
+                                             hyb, sigmaM)).T
+            plt.plot(w, -np.sum(tmp[:norb, :], axis=0), c='C' + str(k),
+                     label=label)
+            plt.plot(w, np.sum(tmp[norb:, :], axis=0), c='C' + str(k))
+        plt.legend()
+        plt.xlabel('energy  (eV)')
+        plt.xlim(xlim)
+        plt.show()
+
 
 def get_pdos0_eig_weight(e, b, v, w, eim, pdos_method='0'):
     """
@@ -234,9 +458,10 @@ def get_pdos0_eig_weight(e, b, v, w, eim, pdos_method='0'):
         'Warning: eigenvalues and weights are not calculated'
     return pdos, eig, weight
 
+
 def get_e0(w,eim,pdos_default,eb,vb,nc,no,bounds,wmin0,wmax0,verbose_text):
     """
-    Return the adjusted on-site energies.
+    Return adjusted on-site energies.
 
     Due to the discretization approximation of the hybridization function,
     it is justified to try to compensate for this introduced error by
@@ -266,6 +491,46 @@ def get_e0(w,eim,pdos_default,eb,vb,nc,no,bounds,wmin0,wmax0,verbose_text):
             if verbose_text:
                 print("deviation(e0d) =", res.fun)
     return e0
+
+
+def get_e(w, eim, p_rspt, hyb, sigmaM, e0, wmin, wmax, verbose_text):
+    """
+    Return adjusted on-site energies.
+
+    Due to the discretization approximation of the hybridization function,
+    it is justified to try to compensate for this introduced error by
+    adjusting the on-site energies.
+
+    """
+    mask = np.logical_and(wmin < w, w < wmax)
+    nc = np.shape(p_rspt)[0]
+    no = len(e0)
+    avgErspt = np.zeros(nc)
+    for i in range(nc):
+        avgErspt[i] = cog(w[mask], p_rspt[i, mask])
+    hybM_mask = np.zeros((nc, nc, len(w[mask])), dtype=np.complex)
+    for i in range(nc):
+        hybM_mask[i, i, :] = hyb[i, mask]
+    sigmaM_mask = sigmaM[:, :, mask]
+    # Trial energies
+    e_start = e0.copy()
+    # Optimize epsilon by fitting to interacting PDOS,
+    # while keeping bath parameters fix
+    res = minimize(get_deviation_using_self_energy,
+                   e_start,
+                   args=(avgErspt, w[mask], eim, hybM_mask, sigmaM_mask),
+                   method='SLSQP',
+                   bounds=[(wmin, wmax)] * no,
+                   options={'maxiter': 100, 'disp': True})
+    e = res.x
+    if verbose_text:
+        print("deviation(e_start) = ",get_deviation_using_self_energy(
+            e_start, avgErspt, w[mask], eim, hybM_mask, sigmaM_mask))
+        print("devation(e) = ", res.fun)
+        print('nit = ', res.nit)
+        print('success:', res.success)
+        print('message:', res.message)
+    return e
 
 
 def get_deviation(e, eb, vb, w, eim, pdos_default, wmin, wmax):
@@ -573,7 +838,11 @@ def pdos(w, eim, e, hyb, sig=0):
     dos : (N,N,M) ndarray
         Calculated PDOS.
 
-    .. math:: PDOS_{a,b}(\omega) = (((\omega + i \delta)\delta_{i,j}-e_{i,j}-\Delta_{i,j}(\omega+i\delta)-\Sigma_{i,j}(\omega+i\delta)  )^{-1})_{a,b}
+    .. math:: PDOS_{a,b}(\omega) = ((  (\omega + i \delta)\delta_{i,j}
+                                     - e_{i,j}
+                                     - \Delta_{i,j}(\omega+i\delta)
+                                     - \Sigma_{i,j}(\omega+i\delta)
+                                    )^{-1})_{a,b}
 
     """
     e = np.array(e)
