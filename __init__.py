@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-An interface from the RSPt software to the impurityModel software. 
+An interface from the RSPt software to the impurityModel software.
 
 Some support for interfacing to the Quanty software is also provided.
 
@@ -17,4 +17,5 @@ from . import hybridization
 from . import energies
 from . import orbitals
 from . import unitarytransform
-
+from . import readfile
+from . import offdiagonal

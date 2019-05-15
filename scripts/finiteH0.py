@@ -22,6 +22,7 @@ from rspt2spectra import hybridization
 from rspt2spectra import energies
 from rspt2spectra import h2imp
 from rspt2spectra import orbitals
+from rspt2spectra import readfile
 from rspt2spectra.constants import eV
 from rspt2spectra.h2Quanty import print_QuantyH_from_dense_rsptH
 # Read input parameters from local file
@@ -38,6 +39,8 @@ no = 2*norb if r2s.spinpol and not r2s.spinavg else norb
 # Center of gravity energy windows
 wmin0s = [r2s.wmin0]*no
 wmax0s = [r2s.wmax0]*no
+# Name of RSPt's output file.
+outfile = 'out'
 # Files for hybridization function
 file_re_hyb = 'real-hyb-' + r2s.basis_tag + '.dat'
 file_im_hyb = 'imag-hyb-' + r2s.basis_tag + '.dat'
@@ -50,32 +53,24 @@ if r2s.self_energy:
     # Files for self-energies
     file_re_sig = 'real-sig-realaxis-' + r2s.basis_tag + '.dat'
     file_im_sig = 'imag-sig-realaxis-' + r2s.basis_tag + '.dat'
-    file_re_sig_offd = 'real-offdiag-sig-realaxis-' + r2s.basis_tag + '.dat'
-    file_im_sig_offd = 'imag-offdiag-sig-realaxis-' + r2s.basis_tag + '.dat'
-
+    file_re_off_sig = 'real-offdiag-sig-realaxis-' + r2s.basis_tag + '.dat'
+    file_im_off_sig = 'imag-offdiag-sig-realaxis-' + r2s.basis_tag + '.dat'
 
 # Plot diagonal elements of RSPt's hybridization function
 if r2s.verbose_fig:
     hybridization.plot_hyb(file_im_hyb, r2s.xlim, r2s.spinpol, norb, nc)
 
-# Load the hybridization function
-tmp_re = np.loadtxt(file_re_hyb)
-tmp_im = np.loadtxt(file_im_hyb)
-w = eV*tmp_im[:, 0]
-hyb_re_rspt = eV*np.transpose(tmp_re[:,4:4+nc])
-hyb_im_rspt = eV*np.transpose(tmp_im[:,4:4+nc])
-hyb_rspt = hyb_re_rspt + hyb_im_rspt*1j
-
+w, hyb_rspt = readfile.hyb(file_re_hyb, file_im_hyb, norb, r2s.spinpol)
 print("Calculate hybridization strengths and bath energies")
 if "eb_initial" in dir(r2s) and "wborder" not in dir(r2s):
     assert np.shape(r2s.eb_initial)[0] == nc
-    vb, eb, wborder = hybridization.get_vb_and_new_eb(w, hyb_im_rspt,
+    vb, eb, wborder = hybridization.get_vb_and_new_eb(w, hyb_rspt.imag,
                                                       r2s.eb_initial,
                                                       accept1=0.2, accept2=0.5)
 elif "wborder" in dir(r2s) and "eb_initial" not in dir(r2s):
     assert np.shape(r2s.wborder)[0] == nc
     wborder = np.copy(r2s.wborder)
-    vb, eb = hybridization.get_vb_and_eb(w, hyb_im_rspt, wborder)
+    vb, eb = hybridization.get_vb_and_eb(w, hyb_rspt.imag, wborder)
 else:
     sys.exit("Either the eb_initial or the wborder variable is needed...")
 hyb = hybridization.hyb_d(w + 1j*r2s.eim, eb, vb)
@@ -95,7 +90,7 @@ print()
 
 # Plot discretized hybridization function
 if r2s.verbose_fig:
-    hybridization.plot_discrete_hyb(w, np.imag(hyb), hyb_im_rspt, eb, vb,
+    hybridization.plot_discrete_hyb(w, np.imag(hyb), hyb_rspt.imag, eb, vb,
                                     wborder, nc, r2s.spinpol, r2s.xlim)
 
 
@@ -218,26 +213,8 @@ if r2s.verbose_fig:
 # Off-diagonal hybridization functions
 # Consider off-diagonal hybridization elements.
 if r2s.off_diag_hyb:
-    # Read off-diagonal hybridization functions
-    re = eV * np.loadtxt(file_re_off_hyb)[:, 1:]
-    im = eV * np.loadtxt(file_im_off_hyb)[:, 1:]
-    hybM_rspt = np.zeros((nc, nc, len(wd)),dtype=np.complex)
-    # Diagonal
-    for i in range(nc):
-        hybM_rspt[i, i, :] = hyb_rspt[i, :]
-    # Off-diagonal
-    n = 0
-    for j in range(nc):
-        if r2s.spinpol:
-            if j < norb:
-                irange = range(j) + range(j+1, norb)
-            else:
-                irange = range(norb, j) + range(j+1, nc)
-        else:
-            irange = range(j) + range(j+1, norb)
-        for i in irange:
-            hybM_rspt[i, j, :] = re[:, n] + im[:, n]*1j
-            n += 1
+    _ , hybM_rspt = readfile.hyb(file_re_hyb, file_im_hyb, norb, r2s.spinpol,
+                                file_re_off_hyb, file_im_off_hyb, outfile)
     # Calculate RSPt non-interacting PDOS,
     # using full-matrix RSPt hybridization function
     if nc == no:
@@ -318,15 +295,11 @@ if r2s.off_diag_hyb:
 # Self-energy needed.
 if r2s.self_energy:
     # Load interacting PDOS from file
-    x = np.loadtxt(file_pdos)
-    p_rspt = np.zeros((nc, len(w)))
-    k = 7 if r2s.spinpol else 2
-    for i in range(nc):
-        p_rspt[i, :] = x[:, k + i] / eV
+    _, p_rspt = readfile.pdos(file_pdos, norb, r2s.spinpol)
 
-    sigmaM, sigma = energies.read_self_energy(file_re_sig,file_im_sig,
-                                              file_re_sig_offd,
-                                              file_im_sig_offd, r2s.spinpol)
+    _, sigmaM, sigma = readfile.self_energy(file_re_sig,file_im_sig,
+                                            r2s.spinpol, file_re_off_sig,
+                                            file_im_off_sig)
 
     # Calculate RSPt PDOS in two ways:
     # - Using full-matrix RSPt hybridization function

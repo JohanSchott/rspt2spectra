@@ -21,39 +21,6 @@ import matplotlib.pylab as plt
 from . import hybridization
 from .constants import eV
 
-def read_self_energy(file_re_sig, file_im_sig, file_re_sig_offd,
-                     file_im_sig_offd, spinpol):
-    """
-    Return dynamic self-energies.
-    """
-    # Read diagonal part of the self-energy from file
-    sigma = eV * (np.loadtxt(file_re_sig)[:, 4:]
-                  + 1j * np.loadtxt(file_im_sig)[:, 4:]).T
-    nc, nw = np.shape(sigma)
-    norb = nc//2 if spinpol else nc
-    # Construct self-energy
-    sigmaM = np.zeros((nc, nc, nw), dtype=np.complex)
-    # Diagonal
-    for i in range(nc):
-        sigmaM[i, i, :] = sigma[i, :]
-    # Read off-diagonal part of the self-energy
-    re = eV * np.loadtxt(file_re_sig_offd)[:, 1:]
-    im = eV * np.loadtxt(file_im_sig_offd)[:, 1:]
-    # Off-diagonal
-    n = 0
-    for j in range(nc):
-        if spinpol:
-            if j < norb:
-                irange = range(j) + range(j+1, norb)
-            else:
-                irange = range(norb, j) + range(j+1, nc)
-        else:
-            irange = range(j) + range(j+1, norb)
-        for i in irange:
-            sigmaM[i, j, :] = re[:, n] + im[:, n]*1j
-            n += 1
-    return
-
 
 def get_imp_h(e_onsite, eb, vb, spinpol):
     """

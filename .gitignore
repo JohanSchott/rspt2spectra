@@ -5,6 +5,10 @@
 # Generated documentation files
 docs/_build/*
 
+# ipynb history
+scripts/.ipynb_checkpoints/
+
+
 # Compiled Modules
 *.pyc
 *.so

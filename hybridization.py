@@ -18,6 +18,22 @@ from itertools import chain
 from .energies import cog
 from .constants import eV
 
+
+def get_wborders(n_val=10, n_con=1, wlim_val=(-8,0), wlim_con=(0,1), n_orb=5):
+    def borders_to_sections(bs):
+        section = []
+        for i in range(len(bs[:-1])):
+            section.append([bs[i], bs[i+1]])
+        return section
+    wborder = []
+    b_val = np.linspace(wlim_val[0], wlim_val[1], n_val+1)
+    b_con = np.linspace(wlim_con[0], wlim_con[1], n_con+1)
+    for i_orb in range(n_orb):
+        wborder.append(borders_to_sections(b_val) + borders_to_sections(b_con))
+    wborder = np.array(wborder)
+    return wborder
+
+
 def plot_hyb(filename, xlim, spinpol, norb, nc):
     """
     Plot hybridization functions from file.

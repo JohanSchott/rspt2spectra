@@ -5,39 +5,26 @@
 rspt2spectra_parameters
 =======================
 
-This file contains material specific information needed by the finiteH0.py script.
-Put this file in the RSPt simulation folder.
+This file contains material specific information needed by the finiteH0.py
+script. Put this file in the RSPt simulation folder.
 Then execute the finiteH0.py script (which will read this file).
 
 """
 
 import numpy as np
 from rspt2spectra.constants import eV
+from rspt2spectra.hybridization import get_wborders
 
-
-def get_wborder(n_val=10, n_con=1, wlim_val=(-8,0), wlim_con=(0,1), n_orb=5):
-    def borders_to_sections(bs):
-        section = []
-        for i in range(len(bs[:-1])):
-            section.append([bs[i], bs[i+1]])
-        return section
-    wborder = []
-    b_val = np.linspace(wlim_val[0], wlim_val[1], n_val+1)
-    b_con = np.linspace(wlim_con[0], wlim_con[1], n_con+1)
-    for i_orb in range(n_orb):
-        wborder.append(borders_to_sections(b_val) + borders_to_sections(b_con))
-    wborder = np.array(wborder)
-    return wborder
 
 # Verbose parameters. True or False
 verbose_fig = True
 verbose_text = True
 
-# The non-relativistic non-interacting Hamiltonian operator 
+# The non-relativistic non-interacting Hamiltonian operator
 # is printed to this file name
-output_filename = 'h0.pickle' 
+output_filename = 'h0.pickle'
 
-# Distance above real axis. 
+# Distance above real axis.
 # This has to be the same as the RSPt value stored in green.inp.
 eim = 0.005*eV
 
@@ -64,11 +51,11 @@ spinpol = False
 spinavg = True
 
 # Specify either initial bath energies or a energy window for each bath energy.
-# It probably will be slightly more convienient for the impurityModel script 
-# to read the output from finiteH0.py if the bath sets here are ordered such 
-# that unoccupied bath states (e.i. those with positive energy) are put/stored 
+# It probably will be slightly more convienient for the impurityModel script
+# to read the output from finiteH0.py if the bath sets here are ordered such
+# that unoccupied bath states (e.i. those with positive energy) are put/stored
 # after the occupied bath sets.
-# Initial bath energies. One row contains the bath energies corresponding to 
+# Initial bath energies. One row contains the bath energies corresponding to
 # one impurity orbital.
 # Example with one (1+0) bath orbital per impurity orbital
 #eb_initial = np.array([[-3],
@@ -91,11 +78,11 @@ spinavg = True
 #                    [[-8,-1]],
 #                    [[-8,-1]]],dtype=np.float)
 # Example with two (2+0) bath orbitals per impurity orbital
-wborder = np.array([[[-8,-2.5], [-2.5,-1]],
-                    [[-8,-4],   [-4,-1]],
-                    [[-8,-2.5], [-2.5,-1]],
-                    [[-8,-4],   [-4,-1]],
-                    [[-8,-4],   [-4,-1]]],dtype=np.float)
+#wborder = np.array([[[-8,-2.5], [-2.5,-1]],
+#                    [[-8,-4],   [-4,-1]],
+#                    [[-8,-2.5], [-2.5,-1]],
+#                    [[-8,-4],   [-4,-1]],
+#                    [[-8,-4],   [-4,-1]]],dtype=np.float)
 # Example with two (1+1) bath orbitals per impurity orbital
 #wborder = np.array([[[-8,0], [0,1]],
 #                    [[-8,0], [0,1]],
@@ -132,8 +119,16 @@ wborder = np.array([[[-8,-2.5], [-2.5,-1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]],
 #                    [[-8,-5],[-5,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]]],dtype=np.float)
-# Example with four (10+1) bath orbitals per impurity orbital
-#wborder = get_wborder(n_val=10, n_con=1)
+# Example with ten (10+0) bath orbitals per impurity orbital
+wborder = get_wborders(n_val=10, n_con=0)
+# Example with eleven (10+1) bath orbitals per impurity orbital
+#wborder = get_wborders(n_val=10, n_con=1)
+# Example with twelve (10+2) bath orbitals per impurity orbital
+#wborder = get_wborders(n_val=10, n_con=2)
+# Example with twenty (20+0) bath orbitals per impurity orbital
+#wborder = get_wborders(n_val=20, n_con=0)
+# Example with thirty (30+0) bath orbitals per impurity orbital
+#wborder = get_wborders(n_val=30, n_con=0)
 
 # Plot energy range. Only used for plotting.
 xlim = [-9,4]
@@ -181,6 +176,3 @@ spherical_bath_basis = True
 
 # If save Hamiltonian to Quanty friendly format
 save2Quanty = True
-
-
-
