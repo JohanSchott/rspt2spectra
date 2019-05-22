@@ -55,6 +55,7 @@ spinavg = True
 # to read the output from finiteH0.py if the bath sets here are ordered such
 # that unoccupied bath states (e.i. those with positive energy) are put/stored
 # after the occupied bath sets.
+#
 # Initial bath energies. One row contains the bath energies corresponding to
 # one impurity orbital.
 # Example with one (1+0) bath orbital per impurity orbital
@@ -69,6 +70,7 @@ spinavg = True
 #                       [-3,2],
 #                       [-6,4],
 #                       [-5,3]],dtype=np.float)
+#
 # Energy windows for bath energies. One row contains the energies corresponding
 # to one impurity orbital.
 # Example with one (1+0)bath orbital per impurity orbital
@@ -119,8 +121,16 @@ spinavg = True
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]],
 #                    [[-8,-4],[-4,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]],
 #                    [[-8,-5],[-5,-2.5],[-2.5,-1.5],[-1.5,-1],[0,1]]],dtype=np.float)
+# Example with one (1+0) bath orbitals per impurity orbital, narrow windows
+#wborder = get_wborders(n_val=1, n_con=0, wlim_val=(-10,-3))
+# Example with two (2+0) bath orbitals per impurity orbital, narrow windows
+#wborder = get_wborders(n_val=2, n_con=0, wlim_val=(-10,-3))
+# Example with five (5+0) bath orbitals per impurity orbital
+wborder = get_wborders(n_val=5, n_con=0)
+# Example with six (5+1) bath orbitals per impurity orbital
+#wborder = get_wborders(n_val=5, n_con=1)
 # Example with ten (10+0) bath orbitals per impurity orbital
-wborder = get_wborders(n_val=10, n_con=0)
+#wborder = get_wborders(n_val=10, n_con=0)
 # Example with eleven (10+1) bath orbitals per impurity orbital
 #wborder = get_wborders(n_val=10, n_con=1)
 # Example with twelve (10+2) bath orbitals per impurity orbital
@@ -133,18 +143,21 @@ wborder = get_wborders(n_val=10, n_con=0)
 # Plot energy range. Only used for plotting.
 xlim = [-9,4]
 
-# Method of choice for calculating on-site energies.
-# Three possibilities:
-# 0 - Considers non-interacting PDOS and neglects
+# Method of choice for selecting on-site energies.
+# Four options:
+# 0 - Read RSPt's diagonal on-site energies from the out-file.
+#     This might be the best option if an energy window is used
+#     in the green.inp file.
+# 1 - Considers non-interacting PDOS and neglects
 #     off-diagonal elements of RSPt's hybridization
 #     function.
-# 1 - Considers non-interacting PDOS and includes
+# 2 - Considers non-interacting PDOS and includes
 #     off-diagonal elements of RSPt's hybridization
 #     function.
-# 2 - Considers interacting PDOS and includes
+# 3 - Considers interacting PDOS and includes
 #     off-diagonal elements of RSPt's
 #     hybridization function.
-e_method = 0
+e_method = 1
 
 # If off-diagonal hybridization elements are
 # available in files

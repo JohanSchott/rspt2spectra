@@ -19,35 +19,60 @@ from .energies import cog
 from .constants import eV
 
 
-def get_wborders(n_val=10, n_con=1, wlim_val=(-8,0), wlim_con=(0,1), n_orb=5):
+def get_wborders(n_val=10, n_con=1, wlim_val=(-8,0), wlim_con=(0,1), n_orb=5,
+                 spinpol=False):
+    """
+    Return energy window borders.
+
+    n_val : int
+    n_con : int
+    wlim_val : tuple
+    wlim_con : tuple
+    n_orb : int
+        Number of orbitals, 5 for d-system, 7 for f-system.
+    spinpol : boolean
+
+    """
+    # Number of non-equivalent correlated spin-orbitals
+    nc = 2*n_orb if spinpol else n_orb
     def borders_to_sections(bs):
         section = []
         for i in range(len(bs[:-1])):
             section.append([bs[i], bs[i+1]])
         return section
-    wborder = []
+    wborders = []
     b_val = np.linspace(wlim_val[0], wlim_val[1], n_val+1)
     b_con = np.linspace(wlim_con[0], wlim_con[1], n_con+1)
-    for i_orb in range(n_orb):
-        wborder.append(borders_to_sections(b_val) + borders_to_sections(b_con))
-    wborder = np.array(wborder)
-    return wborder
+    for i_orb in range(nc):
+        wborders.append(borders_to_sections(b_val) + borders_to_sections(b_con))
+    wborders = np.array(wborders)
+    return wborders
 
+def plot_hyb(w, hyb, xlim, spinpol):
+    """
+    Plot diagonal hybridization functions.
 
-def plot_hyb(filename, xlim, spinpol, norb, nc):
+    Parameters
+    ----------
+    w : array(N)
+    hyb : array(M, N)
+    xlim : tuple
+    spinpol : boolean
+
     """
-    Plot hybridization functions from file.
-    """
-    x = np.loadtxt(filename)
-    wp = x[:, 0]*eV
-    mask = np.logical_and(xlim[0] < wp, wp < xlim[1])
-    wp = wp[mask]
+    # Number of spin orbitals
+    nc = np.shape(hyb)[0]
+    if spinpol:
+        norb = nc//2
+    else:
+        norb = nc
+    mask = np.logical_and(xlim[0] < w, w < xlim[1])
+    w = w[mask]
     # Total hybridization
     plt.figure()
-    hyb_tot = -1/pi*x[mask, 1]*eV
-    plt.plot(wp, hyb_tot)
+    plt.plot(w, -1/pi*np.sum(hyb[:, mask].imag, axis=0))
     plt.xlabel('$\omega$   (eV)')
-    plt.ylabel(r'$\frac{-1}{\pi}$ Im $\Delta(\omega)$')
+    plt.ylabel(r'$\frac{-1}{\pi}$ Im $\Delta(\omega)$   (eV)')
     plt.xlim(xlim)
     plt.grid(color='0.9')
     plt.title("Total hybridzation function")
@@ -55,10 +80,10 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
     if spinpol:
         # Spin up and down
         plt.figure()
-        hyb_dn = -1/pi*x[mask, 2]*eV
-        plt.plot(wp, -hyb_dn, c='C0')
-        hyb_up = -1/pi*x[mask, 3]*eV
-        plt.plot(wp, hyb_up, c='C0')
+        hyb_dn = -1/pi*np.sum(hyb[:norb, mask], axis=0)
+        plt.plot(w, -hyb_dn, c='C0')
+        hyb_up = -1/pi*np.sum(hyb[norb:, mask], axis=0)
+        plt.plot(w, hyb_up, c='C0')
         plt.xlabel('$\omega$   (eV)')
         plt.ylabel(r'$\frac{-1}{\pi}$ Im $\Delta(\omega)$')
         plt.xlim(xlim)
@@ -68,9 +93,9 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
         # Orbital resolved
         fig = plt.figure()
         for i in range(norb):
-            hyb_dn = -1/pi*x[mask, 4+i]*eV
-            hyb_up = -1/pi*x[mask, 4+norb+i]*eV
-            plt.plot(wp, hyb_dn + hyb_up, c='C' + str(i), label=str(i))
+            hyb_dn = -1/pi*hyb[i, mask]
+            hyb_up = -1/pi*hyb[norb+i, mask]
+            plt.plot(w, hyb_dn + hyb_up, c='C' + str(i), label=str(i))
         plt.ylabel(r'$\frac{-1}{\pi}$ Im $\Delta(\omega)$')
         plt.grid(color='0.9')
         plt.legend()
@@ -83,10 +108,10 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
         fig = plt.figure()
         for i in range(norb):
             # Plot down spin with minus sign
-            hyb_dn = -1/pi*x[mask, 4+i]*eV
-            hyb_up = -1/pi*x[mask, 4+norb+i]*eV
-            plt.plot(wp, -hyb_dn, c='C' + str(i), label=str(i))
-            plt.plot(wp, hyb_up, c='C' + str(i))
+            hyb_dn = -1/pi*hyb[i, mask]
+            hyb_up = -1/pi*hyb[norb+i, mask]
+            plt.plot(w, -hyb_dn, c='C' + str(i), label=str(i))
+            plt.plot(w, hyb_up, c='C' + str(i))
         plt.ylabel(r'$\frac{-1}{\pi}$ Im $\Delta(\omega)$')
         plt.grid(color='0.9')
         plt.legend()
@@ -99,10 +124,10 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
         fig, axes = plt.subplots(nrows=norb, sharex=True, sharey=True)
         for i, ax in enumerate(axes):
             # Plot down spin with thinner line
-            hyb_dn = -1/pi*x[mask, 4+i]*eV
-            hyb_up = -1/pi*x[mask, 4+norb+i]*eV
-            ax.plot(wp, hyb_dn, lw=0.7, c='C' + str(i))
-            ax.plot(wp, hyb_up, c='C' + str(i), label=str(i))
+            hyb_dn = -1/pi*hyb[i, mask]
+            hyb_up = -1/pi*hyb[norb+i, mask]
+            ax.plot(w, hyb_dn, lw=0.7, c='C' + str(i))
+            ax.plot(w, hyb_up, c='C' + str(i), label=str(i))
             ax.grid(color='0.9')
             ax.legend()
         axes[-1].set_ylabel(r'$\frac{-1}{\pi}$ Im $\Delta(\omega)$')
@@ -115,8 +140,8 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
         # Orbital resolved
         fig = plt.figure()
         for i in range(nc):
-            hyb_i = -1/pi*x[mask, 4+i]*eV
-            plt.plot(wp, hyb_i, label=str(i))
+            hyb_i = -1/pi*hyb[i, mask].imag
+            plt.plot(w, hyb_i, label=str(i))
         plt.ylabel(r'$\frac{-1}{\pi}$ Im $\Delta(\omega)$')
         plt.grid(color='0.9')
         plt.legend()
@@ -126,7 +151,9 @@ def plot_hyb(filename, xlim, spinpol, norb, nc):
         plt.title("Orbital resolved hybridzation function")
         plt.show()
 
-def plot_discrete_hyb(w,hyb_im,hyb_im_rspt,eb,vb,wborder,nc,spinpol,xlim):
+
+def plot_discrete_hyb(w, hyb_im, hyb_im_rspt, eb, vb, wborder, nc, spinpol,
+                      xlim):
     """
     Plot discretized hybridization functions.
     """
@@ -241,7 +268,7 @@ def plot_discrete_hyb(w,hyb_im,hyb_im_rspt,eb,vb,wborder,nc,spinpol,xlim):
         plt.show()
 
 
-def plot_hyb_off_diagonal(w,hyb,nc,xlim):
+def plot_hyb_off_diagonal(w, hyb, nc, xlim):
     """
     Plot off-diagonal elements of hybridization functions.
 
@@ -259,11 +286,11 @@ def plot_hyb_off_diagonal(w,hyb,nc,xlim):
     """
     plt.figure()
     for i in range(nc):
-        plt.plot(w, -np.imag(hybM_rspt[i, i, :]), '-k')
+        plt.plot(w, -np.imag(hyb[i, i, :]), '-k')
     for i in range(nc):
         for j in range(nc):
             if i != j:
-                plt.plot(w, -np.imag(hybM_rspt[i, j, :]), '-r')
+                plt.plot(w, -np.imag(hyb[i, j, :]), '-r')
     plt.plot([], [], '-k', label='diagonal')
     plt.plot([], [], '-r', label='off-diagonal')
     plt.legend()

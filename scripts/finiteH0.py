@@ -56,11 +56,12 @@ if r2s.self_energy:
     file_re_off_sig = 'real-offdiag-sig-realaxis-' + r2s.basis_tag + '.dat'
     file_im_off_sig = 'imag-offdiag-sig-realaxis-' + r2s.basis_tag + '.dat'
 
+# Diagonal hybridization functions.
+w, hyb_rspt = readfile.hyb(file_re_hyb, file_im_hyb, r2s.spinpol,
+                           only_diagonal_part=True)
 # Plot diagonal elements of RSPt's hybridization function
 if r2s.verbose_fig:
-    hybridization.plot_hyb(file_im_hyb, r2s.xlim, r2s.spinpol, norb, nc)
-
-w, hyb_rspt = readfile.hyb(file_re_hyb, file_im_hyb, norb, r2s.spinpol)
+    hybridization.plot_hyb(w, hyb_rspt, r2s.xlim, r2s.spinpol)
 print("Calculate hybridization strengths and bath energies")
 if "eb_initial" in dir(r2s) and "wborder" not in dir(r2s):
     assert np.shape(r2s.eb_initial)[0] == nc
@@ -123,7 +124,7 @@ mu = energies.get_mu()
 for h, label in zip(hs, labels):
     # Select Hamiltonian from correct cluster
     if label == r2s.basis_tag:
-        print("Extract diagonal of local H0 from cluster:",label)
+        print("Extract diagonal of local H0 from cluster:", label)
         print()
         e_rspt = eV*np.real(h.diagonal() - mu)
 e_rspt = e_rspt[:no]  # select non-equivalent on-site energies
@@ -209,25 +210,23 @@ if r2s.verbose_fig:
     energies.plot_pdos0_3(w, p0d_rspt, p0d_initial, p0d, nc, r2s.spinpol,
                           r2s.xlim)
 
-
 # Off-diagonal hybridization functions
 # Consider off-diagonal hybridization elements.
 if r2s.off_diag_hyb:
-    _ , hybM_rspt = readfile.hyb(file_re_hyb, file_im_hyb, norb, r2s.spinpol,
-                                file_re_off_hyb, file_im_off_hyb, outfile)
+    _, hybM_rspt = readfile.hyb(file_re_hyb, file_im_hyb, r2s.spinpol)
     # Calculate RSPt non-interacting PDOS,
     # using full-matrix RSPt hybridization function
     if nc == no:
-        p0_rspt = np.diagonal(energies.pdos(wd, r2s.eim, e_rspt, hybM_rspt)).T
+        p0_rspt = np.diagonal(energies.pdos(w, r2s.eim, e_rspt, hybM_rspt)).T
     elif nc == 2*no:
-        p0_rspt = np.diagonal(energies.pdos(wd, r2s.eim, 2*list(e_rspt),
+        p0_rspt = np.diagonal(energies.pdos(w, r2s.eim, 2*list(e_rspt),
                                             hybM_rspt)).T
 
 if r2s.verbose_fig and r2s.off_diag_hyb:
     # Plot off-diagonal hybridization elements
     hybridization.plot_hyb_off_diagonal(w,hybM_rspt,nc,r2s.xlim)
     # Plot non-interacting PDOSes
-    energies.plot_pdos0_from_off_diagonal_hyb(w, p0d_rspt, pd_rspt, p0d,
+    energies.plot_pdos0_from_off_diagonal_hyb(w, p0d_rspt, p0_rspt, p0d,
                                               r2s.xlim)
 
 
@@ -378,16 +377,20 @@ if r2s.verbose_fig and r2s.self_energy and r2s.off_diag_hyb:
 
 # Choose which algorithm to use.
 if r2s.e_method == 0:
+    e_onsite = e_rspt
+if r2s.e_method == 1:
     e_onsite = e0d
-elif r2s.e_method == 1:
-    e_onsite = e0
 elif r2s.e_method == 2:
+    e_onsite = e0
+elif r2s.e_method == 3:
     e_onsite = e
 
-# Construct impurity Hamiltonian
-h = energies.get_imp_h(e_onsite, eb, vb, r2s.spinpol)
+# Construct non-interacting Hamiltonian matrix
+h = energies.get_h0(e_onsite, eb, vb, r2s.spinpol)
 
 if r2s.verbose_text:
+    print('Size of H: {:d}'.format(np.shape(h)[0]))
+    print()
     print("Correlated orbitals:")
     print("Real part:")
     print(energies.print_matrix(h[:nc, :nc].real))
@@ -402,7 +405,7 @@ if r2s.verbose_text:
                                   2*norb:2*norb + nc].imag))
     print()
     print("Eigenvalues of H:")
-    eigenvalues,eigenvectors = np.linalg.eigh(h)
+    eigenvalues, eigenvectors = np.linalg.eigh(h)
     print(eigenvalues)
 
 u = orbitals.get_u_transformation(np.shape(h)[0], r2s.basis_tag, r2s.irr_flag,
@@ -430,7 +433,7 @@ if r2s.verbose_text:
     print("Imag part:")
     print(energies.print_matrix(np.imag(h_sph[2*norb:4*norb, 2*norb:4*norb])))
     print()
-    print("Hopping to first bath:")
+    print("Hopping to first bath set:")
     print("Real part:")
     print(energies.print_matrix(np.real(h_sph[2*norb:4*norb, :2*norb])))
     print("Imag part:")
@@ -441,8 +444,15 @@ if r2s.verbose_text:
 if r2s.save2Quanty:
     print_QuantyH_from_dense_rsptH(h_sph, ang=(norb-1)//2, previous_orbitals=6)
 
-hOperator = h2imp.get_H_operator_from_dense_rsptH(h_sph, ang=(norb-1)//2)
+hOperator = h2imp.get_H_operator_from_dense_rspt_H_matrix(h_sph,
+                                                          ang=(norb-1)//2)
 if r2s.verbose_text:
     print("Hamiltonian operator:")
     print(hOperator)
+    #repr(hOperator)
+    print()
+    assert (np.shape(h_sph)[0] - 2*norb) % (2*norb) == 0
+    print('{:d} bath states per impurity spin-orbital.'.format(
+        (np.shape(h_sph)[0] - 2*norb)//(2*norb)))
+    print('{:d} bath states in total.'.format(np.shape(h_sph)[0] - 2*norb))
 h2imp.write_to_file(hOperator, r2s.output_filename)

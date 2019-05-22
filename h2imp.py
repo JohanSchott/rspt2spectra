@@ -5,14 +5,15 @@
 h2imp
 =====
 
-This module contains functions which are useful for interfacing to impurityModel.
+This module contains functions which are useful for interfacing to
+the impurityModel repository.
 
 """
 
 import numpy as np
 import scipy.sparse
 import pickle
-
+from collections import OrderedDict
 
 def write_to_file(d, filename='h0_Op.pickle'):
     """
@@ -22,7 +23,7 @@ def write_to_file(d, filename='h0_Op.pickle'):
         pickle.dump(d, handle)
 
 
-def get_H_operator_from_dense_rsptH(h, ang=2):
+def get_H_operator_from_dense_rspt_H_matrix(h, ang=2):
     """
     Returns Hamiltonian in a second quantization operator format.
 
@@ -32,8 +33,7 @@ def get_H_operator_from_dense_rsptH(h, ang=2):
         Hamiltonian matrix ordered in RSPt format.
         Contains impurity orbitals of one angular momentum and
         associated bath orbitals.
-        Spherical harmonics basis is assumed,
-        for both impurity and bath orbitals.
+        Spherical harmonics basis is assumed for impurity orbitals.
     ang : int
         Angular momentum of impurity orbitals.
 
@@ -45,48 +45,77 @@ def get_H_operator_from_dense_rsptH(h, ang=2):
         annihilation at spin orbital j, followed by an electron creation
         at spin orbital i.
     """
+
+    assert np.shape(h)[0] == np.shape(h)[1]
+    # Number of spin orbitals in total.
+    n = np.shape(h)[0]
+    # Specify how many bath states are present.
+    nBaths = OrderedDict()
+    nBaths[ang] = n - 2*(2*ang+1)
     hOp = {}
-    for i in range(np.shape(h)[0]):
-        for j in range(np.shape(h)[1]):
+    for i in range(n):
+        for j in range(n):
             if h[i,j] != 0:
-                spin_orb_i = index2coordinates(i,ang)
-                spin_orb_j = index2coordinates(j,ang)
-                hOp[((spin_orb_i,'c'),(spin_orb_j,'a'))] = h[i,j]
+                spin_orb_i = rspt_i2c(nBaths, i)
+                spin_orb_j = rspt_i2c(nBaths, j)
+                hOp[((spin_orb_i, 'c'), (spin_orb_j, 'a'))] = h[i,j]
     return hOp
 
-def index2coordinates(i,ang=2):
+def rspt_i2c(nBaths, i):
     """
-    Return coordinates of orbital with Hamiltonian index i.
+    Return an coordinate tuple, representing a spin-orbital.
 
     Parameters
     ----------
+    nBaths : ordered dict
+        An elements is either of the form:
+        angular momentum : number of bath spin-orbitals
+        or of the form:
+        (angular momentum_a, angular momentum_b, ...) : number of bath states.
+        The latter form is used if impurity orbitals from different
+        angular momenta share the same bath states.
     i : int
-        Hamiltonian index.
-    ang : int
-        Angular momentum of impurity orbitals.
-
+        An index denoting a spin-orbital or a bath state.
 
     Returns
     -------
-    spin_orb : tuple
-        (l,m,s) or (l,m,s,bath_set), where
-        l = ang,
-        m will take one value from {-l,-l+1,...,l},
-        s will take one value from {0,1}, and
-        bath_set will index which bath set the bath orbital belongs to,
-        starting from 0.
+    spinOrb : tuple
+        (l, s, m), (l, b) or ((l_a, l_b, ...), b)
 
     """
-    norb = 2*ang+1
-    k = i//(2*norb)
-    i_imp = i-k*2*norb
-    if i_imp < norb:
-        s = 0
-        m = i_imp - 2
-    else:
-        s = 1
-        m = i_imp - 7
-    if k == 0:
-        return (ang,m,s)
-    else:
-        return (ang,m,s,k-1)
+    # Counting index.
+    k = 0
+    # Check if index "i" belong to an impurity spin-orbital.
+    # Loop through all impurity spin-orbitals.
+    for lp in nBaths.keys():
+        if isinstance(lp, int):
+            # Check if index "i" belong to impurity spin-orbital having lp.
+            if i - k < 2*(2*lp+1):
+                for sp in range(2):
+                    for mp in range(-lp, lp+1):
+                        if k == i:
+                            return (lp, sp, mp)
+                        k += 1
+            k += 2*(2*lp+1)
+        elif isinstance(lp, tuple):
+            # Loop over all different angular momenta in lp.
+            for lp_int in lp:
+                # Check if index "i" belong to impurity spin-orbital having lp_int.
+                if i - k < 2*(2*lp_int+1):
+                    for sp in range(2):
+                        for mp in range(-lp_int, lp_int+1):
+                            if k == i:
+                                return (lp_int, sp, mp)
+                            k += 1
+                k += 2*(2*lp_int+1)
+    # If reach this point it means index "i" belong to a bath state.
+    # Need to figure out which one.
+    for lp, nBath in nBaths.items():
+        b = i - k
+        # Check if bath state belong to bath states having lp.
+        if b < nBath:
+            # The index "b" will have a value between 0 and nBath-1
+            return (lp, b)
+        k += nBath
+    print(i)
+    sys.exit('Can not find spin-orbital state corresponding to index.')

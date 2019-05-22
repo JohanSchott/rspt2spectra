@@ -22,15 +22,15 @@ from . import hybridization
 from .constants import eV
 
 
-def get_imp_h(e_onsite, eb, vb, spinpol):
+def get_h0(e_onsite, eb, vb, spinpol):
     """
-    Return impurity Hamiltonian.
+    Return non-interacting Hamiltonian matrix.
     """
     no = len(e_onsite)
     nc, nb = np.shape(eb)
     norb = nc//2 if spinpol else nc
     # Initialize the full Hamiltonian, including spin
-    h = np.zeros(2*norb*(1 + nb)*np.array([1, 1]),dtype=np.complex)
+    h = np.zeros(2*norb*(1 + nb)*np.array([1, 1]), dtype=np.complex)
 
     # On-site energies of correlated orbitals
     if no == 2*norb:
@@ -250,7 +250,7 @@ def plot_pdos0_4(w,p0d_rspt,p0d,p0_rspt,p0,norb,spinpol,xlim):
         plt.show()
 
 
-def plot_pdos0_from_off_diagonal_hyb(w, p0d_rspt, pd_rspt, p0d, xlim):
+def plot_pdos0_from_off_diagonal_hyb(w, p0d_rspt, p0_rspt, p0d, xlim):
     plt.figure()
     plt.plot(w, np.sum(p0d_rspt, axis=0), label='p0d_rspt')
     plt.plot(w, np.sum(p0_rspt, axis=0), label='p0_rspt')
