@@ -10,10 +10,274 @@ off-diagonal hybridization functions.
 
 """
 
+import matplotlib.pylab as plt
 import numpy as np
 from scipy.optimize import minimize
 
 from .energies import cog
+
+def plot_diagonal_and_offdiagonal(w, hyb_diagonal, hyb, xlim):
+    """
+    Plot diagonal and offdiagonal hybridization functions separately.
+    """
+    # Number of considered impurity orbitals
+    n_imp = np.shape(hyb_diagonal)[0]
+
+    # Plot mask
+    mask = np.logical_and(xlim[0] < w, w < xlim[1])
+    # Diagonal functions
+    # Real part
+    plt.figure()
+    for i in range(n_imp):
+        plt.plot(w[mask], hyb_diagonal[i,mask].real, label=str(i))
+    plt.legend()
+    plt.xlim(xlim)
+    #plt.ylim(ylim)
+    plt.title('Diagonal functions, real part')
+    plt.show()
+    # -Imag part
+    plt.figure()
+    for i in range(n_imp):
+        plt.plot(w[mask], -hyb_diagonal[i,mask].imag, label=str(i))
+    plt.legend()
+    plt.xlim(xlim)
+    #plt.ylim(ylim)
+    plt.title('Diagonal functions, -imag part')
+    plt.show()
+
+    # Off diagonal functions
+    # Real part
+    plt.figure()
+    for i in range(n_imp):
+        for j in list(range(i)) + list(range(i+1, n_imp)):
+            plt.plot(w[mask], hyb[i,j,mask].real)
+    plt.xlim(xlim)
+    #plt.ylim(ylim)
+    plt.title('Off diagonal functions, real part')
+    plt.show()
+    # -Imag part
+    plt.figure()
+    for i in range(n_imp):
+        for j in list(range(i)) + list(range(i+1, n_imp)):
+            plt.plot(w[mask], -hyb[i,j,mask].imag)
+    plt.xlim(xlim)
+    #plt.ylim(ylim)
+    plt.title('Off diagonal functions, -imag part')
+    plt.show()
+
+
+def plot_all_orbitals(w, hyb_orig, hyb_model=None, xlim=None):
+    """
+    Plot functions for all orbitals, for both hyb and hyb_model.
+    """
+    assert np.shape(hyb_orig)[0] == np.shape(hyb_orig)[1]
+    if hyb_model is not None:
+        assert np.shape(hyb_orig) == np.shape(hyb_model)
+    if xlim is None:
+        mask = np.ones_like(w, dtype=np.bool)
+    else:
+        # Mask for plotting
+        mask = np.logical_and(xlim[0] < w, w < xlim[1])
+    # Number of rows and columns in the figure
+    n = np.shape(hyb_orig)[0]
+    if n > 1:
+        # All real functions
+        fig, axes = plt.subplots(nrows=n, ncols=n, sharex=True, sharey=True)
+        for i in range(n):
+            for j in range(n):
+                axes[i,j].plot(w[mask], hyb_orig[i,j,mask].real, label='original')
+                if hyb_model is not None:
+                    axes[i,j].plot(w[mask], hyb_model[i,j,mask].real, label='model')
+                #axes[i,j].grid()
+        if xlim is not None:
+            plt.xlim(xlim)
+        #plt.ylim(ylim)
+        axes[0,n//2].set_title('Real part')
+        #plt.tight_layout()
+        plt.subplots_adjust(top=0.95,right=0.98, wspace=0.03, hspace=0.03)
+        plt.show()
+
+        # All -imag functions
+        fig, axes = plt.subplots(nrows=n, ncols=n, sharex=True, sharey=True)
+        for i in range(n):
+            for j in range(n):
+                axes[i,j].plot(w[mask], -hyb_orig[i,j,mask].imag, label='original')
+                if hyb_model is not None:
+                    axes[i,j].plot(w[mask], -hyb_model[i,j,mask].imag, label='model')
+                #axes[i,j].grid()
+        if xlim is not None:
+            plt.xlim(xlim)
+        #plt.ylim(ylim)
+        axes[0,-1].legend()
+        axes[0,n//2].set_title('- Imag part')
+        #plt.tight_layout()
+        plt.subplots_adjust(top=0.95,right=0.98, wspace=0.03, hspace=0.03)
+        plt.show()
+    elif n == 1:
+        # All real functions
+        fig = plt.figure()
+        for i in range(n):
+            for j in range(n):
+                plt.plot(w[mask], hyb_orig[i,j,mask].real, label='original')
+                if hyb_model is not None:
+                    plt.plot(w[mask], hyb_model[i,j,mask].real, label='model')
+                #plt.grid()
+        if xlim is not None:
+            plt.xlim(xlim)
+        #plt.ylim(ylim)
+        plt.title('Real part')
+        plt.tight_layout()
+        #plt.subplots_adjust(top=0.95,right=0.98, wspace=0.03, hspace=0.03)
+        plt.show()
+
+        # All -imag functions
+        fig = plt.figure()
+        for i in range(n):
+            for j in range(n):
+                plt.plot(w[mask], -hyb_orig[i,j,mask].imag, label='original')
+                if hyb_model is not None:
+                    plt.plot(w[mask], -hyb_model[i,j,mask].imag, label='model')
+                #plt.grid()
+        if xlim is not None:
+            plt.xlim(xlim)
+        #plt.ylim(ylim)
+        plt.legend()
+        plt.title('- Imag part')
+        plt.tight_layout()
+        #plt.subplots_adjust(top=0.95,right=0.98, wspace=0.03, hspace=0.03)
+        plt.show()
+    else:
+        sys.exit('Positive number of impurity orbitals required.')
+
+
+def get_eb_v_for_one_block(w, eim, hyb, block, wsparse, wborders,
+                           n_bath_sets_foreach_window, xlim=None,
+                           verbose_fig=False, gamma=0.):
+    """
+    Return bath energies and hybridization hopping parameters
+    for a specific block.
+
+    """
+    # Select energies in real axis mesh.
+    w_select = w[::wsparse]
+    assert w_select[1] - w_select[0] < 2*eim
+    # For each block, fit a discretized hybridization function to
+    # the original hybridization function.
+    # Number of bath orbitals, for each energy window.
+    n_bath_foreach_window = np.array(n_bath_sets_foreach_window)*len(block)
+    # Select a subset of all impurity orbitals
+    hyb_block = hyb[block[:, np.newaxis], block, ::wsparse]
+    print('shape(hyb_block) = ', hyb_block.shape)
+    print('Get bath energies...')
+    ebs = get_ebs(w_select, hyb_block, wborders, n_bath_foreach_window)
+    #print('shape(ebs) = ', ebs.shape)
+    #print('ebs:')
+    #print(ebs)
+    print('Get hopping parameters...')
+    mask_tmp = np.logical_and(np.min(wborders) < w_select,
+                              w_select < np.max(wborders))
+    n_data_points = len(block)**2*len(w_select[mask_tmp])
+    print('Fit to approx {:d} data points.'.format(n_data_points))
+    n_param = np.sum(n_bath_foreach_window)*len(block)*2
+    print('Use {:d} real-valued parameters in the fit.'.format(n_param))
+    vs, costs = get_vs(w_select+1j*eim, hyb_block, wborders, ebs, gamma=gamma)
+    print('Cost function values (without regularization):')
+    print(costs)
+    #print('shape(vs) = ', vs.shape)
+    #print('vs:')
+    #print(vs)
+    #print('Get merged bath energies...')
+    eb = merge_ebs(ebs)
+    #print(eb)
+    #print('Get merged hopping parameters...')
+    v = merge_vs(vs)
+    #print(v)
+    if verbose_fig:
+        print('Get model hybridization functions...')
+        hyb_model = get_hyb(w_select+1j*eim, eb, v)
+        print('Plot model and original hybridization functions..')
+        plot_all_orbitals(w_select, hyb_block, hyb_model, xlim)
+        # Distribution of hopping parameters
+        plt.figure()
+        plt.hist(np.abs(v).flatten()/np.max(np.abs(v)),bins=30)
+        plt.xlabel('|v|/max(|v|)')
+        plt.show()
+        # Absolute values of the hopping parameters
+        plt.figure()
+        plt.plot(sorted(np.abs(v).flatten())/np.max(np.abs(v)),'-o')
+        plt.ylabel('|v|/max(|v|)')
+        plt.show()
+        print('{:d} elements in v.'.format(v.size))
+        v_mean = np.mean(np.abs(v))
+        v_median = np.median(np.abs(v))
+        print('<v> = ', v_mean)
+        print('v_median = ', v_median)
+        r_cutoff = 0.02
+        mask = np.abs(v) < r_cutoff*np.max(np.abs(v))
+        print('{:d} elements in v are smaller than {:.3f}*v_max.'.format(
+            v[mask].size, r_cutoff))
+        #print('Absolut values of these elements:')
+        #print(sorted(np.abs(v[mask])))
+    return eb, v
+
+
+def get_eb_v(w, eim, hyb, blocks, wsparse, wborders,
+             n_bath_sets_foreach_block_and_window, xlim=None,
+             verbose_fig=False, gamma=0.):
+    """
+    Return bath and hopping parameters by discretizing hybridization functions.
+    """
+    # Number of considered impurity orbitals
+    n_imp = sum(len(block) for block in blocks)
+    # Bath energies
+    eb = []
+    # Hopping parameters
+    v = []
+    # Loop over blocks
+    for block_i, (block, n_bath_sets_foreach_window) in enumerate(zip(blocks, n_bath_sets_foreach_block_and_window)):
+        print('\n ---------------------------- \n')
+        print('Block {:d} treats impurity orbitals:'.format(block_i), block)
+        # Calculate bath energies and hopping parameters for each block.
+        eb_block, v_block = get_eb_v_for_one_block(w, eim, hyb, block, wsparse,
+                                                   wborders,
+                                                   n_bath_sets_foreach_window,
+                                                   xlim, verbose_fig,
+                                                   gamma=gamma)
+        eb.append(eb_block)
+        v_sparse = np.zeros((len(eb_block), n_imp), dtype=np.complex)
+        v_sparse[:, block] = v_block
+        v.append(v_sparse)
+    eb = np.hstack(eb)
+    v = np.vstack(v)
+    # Sort bath states according to the energy windows.
+    # For example, the bath states with energies in the range of
+    # the first energy window is placed first in the sorted list.
+    # This is important if have both occupied and unoccupied bath states,
+    # since we then want the unoccupied bath states to be sorted after
+    # the occupied bath states.
+    eb, v = reshuffle(eb, v, wborders)
+    return eb, v
+
+
+def reshuffle(eb, v, wborders):
+    """
+    Sort bath states according to the energy windows.
+
+    For example, the bath states with energies in the range of
+    the first energy window is placed first in the sorted list.
+    This is important if have both occupied and unoccupied bath states,
+    since we then want the unoccupied bath states to be sorted after
+    the occupied bath states.
+    """
+    eb_new = []
+    v_new = []
+    for i, wborder in enumerate(wborders):
+        mask = np.logical_and(wborder[0] <= eb, eb < wborder[1])
+        eb_new.append(eb[mask])
+        v_new.append(v[mask,:])
+    eb_new = np.hstack(eb_new)
+    v_new = np.vstack(v_new)
+    return eb_new, v_new
 
 
 def get_eb(w, hyb, n_b):
@@ -81,23 +345,28 @@ def get_ebs(w, hyb, wborders, n_b):
         RSPt hybridization functions.
     wborders : array(K, 2)
         Window borders.
-    n_b : int
-        Number of bath orbitals per window.
+    n_b : array(K)
+        Number of bath orbitals for each window.
 
     Returns
     -------
-    ebs : array(K, n_b)
+    ebs : tuple(K)
         Bath energies, for each energy window.
+        Each element contains the bath energies for that energy window,
+        as an array. len(ebs[i]) == n_b[i]
+
 
     """
     n_w = len(w)
     n_imp = np.shape(hyb)[0]
     n_windows = np.shape(wborders)[0]
-    ebs = np.zeros((n_windows, n_b), dtype=np.float)
+    #ebs = np.zeros((n_windows, n_b), dtype=np.float)
+    ebs = []
     # Treat each energy window as seperate.
     for a, wborder in enumerate(wborders):
         mask = np.logical_and(wborder[0]<= w, w <= wborder[1])
-        ebs[a,:] = get_eb(w[mask], hyb[:,:,mask], n_b)
+        #ebs[a,:] = get_eb(w[mask], hyb[:,:,mask], n_b)
+        ebs.append(get_eb(w[mask], hyb[:,:,mask], n_b[a]))
     return ebs
 
 
@@ -142,30 +411,37 @@ def get_vs(z, hyb, wborders, ebs, gamma=0.):
         RSPt hybridization functions.
     wborders : array(K, 2)
         Window borders.
-    ebs : array(K, B)
+    ebs : tuple(K)
         Bath energies, for each energy window.
+        Each element contains the bath energies for that energy window,
+        as an array(B), where B is different for each element.
     gamma : float
         Regularization parameter
 
     Returns
     -------
-    vs : array(K, B, N)
+    vs : tuple(K)
         Hopping parameters, for each energy window.
+        Each element in an array(B, N), where B is different for each element.
     costs : array(K)
         Cost function values, without regularization, for each energy window.
 
     """
     n_w = len(z)
     n_imp = np.shape(hyb)[0]
-    n_windows, n_b = np.shape(ebs)
+    #n_windows, n_b = np.shape(ebs)
+    n_windows = len(ebs)
     # Hopping parameters
-    vs = np.zeros((n_windows, n_b, n_imp), dtype=np.complex)
+    #vs = np.zeros((n_windows, n_b, n_imp), dtype=np.complex)
+    vs = []
     # Cost function values
     costs = np.zeros(n_windows, dtype=np.float)
     # Treat each energy window as seperate.
     for a, wborder in enumerate(wborders):
         mask = np.logical_and(wborder[0]<= z.real, z.real <= wborder[1])
-        vs[a,:,:], costs[a] = get_v(z[mask], hyb[:,:,mask], ebs[a,:], gamma)
+        #vs[a,:,:], costs[a] = get_v(z[mask], hyb[:,:,mask], ebs[a,:], gamma)
+        v, costs[a] = get_v(z[mask], hyb[:,:,mask], ebs[a], gamma)
+        vs.append(v)
     return vs, costs
 
 
@@ -453,15 +729,18 @@ def merge_ebs(ebs):
 
     Parameters
     ----------
-    ebs : array(K, B)
+    ebs : tuple(K)
         Bath energies, for each energy window.
+        Each element contains an array of bath states.
 
     Returns
     -------
-    eb : array(K*B)
+    eb : array
+        All the bath states as a one dimensional array.
 
     """
-    eb = ebs.flatten()
+    eb = np.hstack(ebs)
+    #eb = ebs.flatten()
     return eb
 
 def merge_vs(vs):
@@ -470,13 +749,16 @@ def merge_vs(vs):
 
     Parameters
     ----------
-    vs : array(K, B, N)
+    vs : tuple(K)
         Hopping parameters, for each energy window.
+        Each element contains an array(B,N) of hopping parameters.
 
     Returns
     -------
-    v : array(K*B, N)
-
+    v : array
+        All the hopping parameters as a two dimensional array(Btot, N),
+        where Btot is the number of all the bath states.
     """
-    v = vs.reshape(vs.shape[0]*vs.shape[1], vs.shape[-1])
+    #v = vs.reshape(vs.shape[0]*vs.shape[1], vs.shape[-1])
+    v = np.vstack(vs)
     return v

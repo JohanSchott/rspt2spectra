@@ -17,7 +17,7 @@ import subprocess
 from .constants import eV
 
 
-def hyb(file_re, file_im, spinpol=False, only_diagonal_part=False):
+def hyb(file_re, file_im, spinpol=True, only_diagonal_part=False):
     """
     Return all hybridization functions and associated energy mesh,
     read from RSPt generated files.
@@ -74,7 +74,7 @@ def hyb(file_re, file_im, spinpol=False, only_diagonal_part=False):
                 hyb[i,j,:] = hyb_c[:, mask[i,j]-2]
     # Number of non-equivalent correlated spin-orbitals
     nc = n_imp if spinpol else n_imp//2
-    # Only study one spin sector if no spinpolarization.
+    # Only study one spin sector if no spin-polarization.
     hyb = hyb[:nc,:nc,:]
     if only_diagonal_part:
         return w, np.diagonal(hyb).T

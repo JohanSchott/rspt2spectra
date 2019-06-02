@@ -19,7 +19,7 @@ from .energies import cog
 from .constants import eV
 
 
-def get_wborders(n_val=10, n_con=1, wlim_val=(-8,0), wlim_con=(0,1), n_orb=5,
+def get_wborders(n_val=10, n_con=1, wlim_val=(-8, 0), wlim_con=(0, 2), n_orb=5,
                  spinpol=False):
     """
     Return energy window borders.
@@ -158,31 +158,34 @@ def plot_discrete_hyb(w, hyb_im, hyb_im_rspt, eb, vb, wborder, nc, spinpol,
     Plot discretized hybridization functions.
     """
     nb = np.shape(eb)[1]
-    fig, axarr = plt.subplots(nc, figsize=(7, 8), sharex=True,
+    fig, axarr = plt.subplots(nc, figsize=(5, 6), sharex=True,
                               sharey=True)
+    scale_factor_hyb = 1.06
+    scale_factor_v = 3
+    v_max_plot = int(scale_factor_v*np.max(vb))
     # Loop over non-equivalent correlated spin-orbitals
     for i, ax in enumerate(axarr):
         color = iter(plt.cm.rainbow(np.linspace(0, 1, nb)))
         ax_v = ax.twinx()
-        ax_v.set_ylabel('$v_{b}$  (eV)', color='r')
-        ax_v.tick_params('y', colors='r')
+        if i == nc//2 :
+            ax_v.set_ylabel('$v_{b}$  (eV)', color='b')
+        ax_v.tick_params('y', colors='b')
         # Loop over bath states
         for ebath, v, wb, c in zip(eb[i], vb[i], wborder[i], color):
-            ax_v.plot([ebath, ebath], [0, v], c='r')
-            ax_v.plot([wb[0], wb[0]], [0, v], '--', c=c)
-            ax_v.plot([wb[1], wb[1]], [0, v], '--', c=c)
+            ax_v.plot([ebath, ebath], [0, v], c='b')
+            #ax_v.plot([wb[0], wb[0]], [0, v], '--', c='0.8') # c=c
+            #ax_v.plot([wb[1], wb[1]], [0, v], '--', c='0.8') # c=c
         # Plot discretized hybridization function
-        ax.plot(w, -1/pi*hyb_im[i, :], c='0.8', label='discrete')
-        v_max_plot = 1.07 * np.max(vb[i])
+        ax.plot(w, -1/pi*hyb_im[i, :], c='r', label='discrete')
         ax_v.set_ylim([0, v_max_plot])
-        ax.grid(color='0.92')
+        #ax.grid(color='0.92')
     axarr[nc//2].set_ylabel(r'-$\frac{1}{\pi}\mathrm{Im}'
                                   '\Delta(\omega)$      (eV)')
     # Plot continues hybridization function
     for i, ax in enumerate(axarr):
-        hyb_max_plot = 1.2 * np.max(-1/pi*hyb_im_rspt[i])
-        ax.set_ylim([0, hyb_max_plot])
         ax.plot(w, -1/pi*hyb_im_rspt[i], '-k', label='RSPt')
+    hyb_max_plot = scale_factor_hyb*np.max(-1/pi*hyb_im_rspt)
+    axarr[0].set_ylim([0, hyb_max_plot])
     axarr[-1].set_xlabel('E   (eV)')
     axarr[0].set_xlim(xlim)
     axarr[0].legend(loc='best')
@@ -190,7 +193,7 @@ def plot_discrete_hyb(w, hyb_im, hyb_im_rspt, eb, vb, wborder, nc, spinpol,
         axarr[0].set_title("Spin and orbital resolved hybridization")
     else:
         axarr[0].set_title("Orbital resolved hybridization")
-    plt.subplots_adjust(left=0.17, bottom=0.10, right=0.83,
+    plt.subplots_adjust(left=0.12, bottom=0.07, right=0.91,
                         top=0.95, hspace=0.0, wspace=0)
     plt.show()
 
