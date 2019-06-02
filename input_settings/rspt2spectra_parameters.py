@@ -56,12 +56,12 @@ wborders = np.array([[-8, 0]], dtype=np.float)
 # Input which impurity orbitals belong to each block.
 # Note, first counting index is 0, not 1 (Python notation).
 # Example with 6 blocks and 10 spin-orbitals:
-blocks = (np.array([0, 3]),
-          np.array([1, 4]),
-          np.array([2]),
-          np.array([5, 8]),
-          np.array([6, 9]),
-          np.array([7]))
+#blocks = (np.array([0, 3]),
+#          np.array([1, 4]),
+#          np.array([2]),
+#          np.array([5, 8]),
+#          np.array([6, 9]),
+#          np.array([7]))
 # Example with 8 blocks and 10 spin-orbitals (e.g. 3d orbitals in spherical harmonics basis):
 blocks = (np.array([0, 4]),
           np.array([1]),
@@ -91,14 +91,14 @@ blocks = (np.array([0, 4]),
 #n_bath_sets_foreach_block_and_window = np.array([[4], [4], [4], [4], [4], [4]])
 #n_bath_sets_foreach_block_and_window = np.array([[10], [10], [10], [10], [10], [10]])
 #n_bath_sets_foreach_block_and_window = np.array([[20], [20], [20], [20], [20], [20]])
-n_bath_sets_foreach_block_and_window = np.array([[30], [30], [30], [30], [30], [30]])
+#n_bath_sets_foreach_block_and_window = np.array([[30], [30], [30], [30], [30], [30]])
 # Examples compatible with 6 blocks and 2 windows:
 #n_bath_sets_foreach_block_and_window = np.array([[10, 1], [10, 1], [10, 1], [10, 1], [10, 1], [10, 1]])
 #n_bath_sets_foreach_block_and_window = np.array([[10, 2], [10, 2], [10, 2], [10, 2], [10, 2], [10, 2]])
 #n_bath_sets_foreach_block_and_window = np.array([[30, 1], [30, 1], [30, 1], [30, 1], [30, 1], [30, 1]])
 #n_bath_sets_foreach_block_and_window = np.array([[30, 1], [30, 1], [10, 1], [10, 1], [10, 1], [10, 1]])
 # Examples compatible with 8 blocks and 1 window:
-#n_bath_sets_foreach_block_and_window = np.array([[30], [30], [30], [30], [30], [30], [30], [30]])
+n_bath_sets_foreach_block_and_window = np.array([[30], [30], [30], [30], [30], [30], [30], [30]])
 # Examples compatible with 10 blocks and 1 window:
 #n_bath_sets_foreach_block_and_window = np.array([[30], [30], [30], [30], [30], [30], [30], [30], [30], [30]])
 
