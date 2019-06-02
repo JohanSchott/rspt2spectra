@@ -4,13 +4,13 @@ r"""
 
 Unitary Tranformation
 =====================
-   
+
 This module contains functions which are useful for
 unitary transformations.
 
 Unitary transformation of spherical to cubic harmonics.
 Transform observables, e.g. the crystal field operator, from the spherical harmonics to cubic harmonics basis.
- 
+
 d-orbitals.
 
 The d-cubic harmonics expressed in 3-d spherical harmonics:
@@ -27,7 +27,7 @@ The d-cubic harmonics expressed in 3-d spherical harmonics:
 
 This is the ordering used in RSPt.
 
-Let's order also the spherical harmonic orbitals (in the order it's done in RSPt): 
+Let's order also the spherical harmonic orbitals (in the order it's done in RSPt):
 
 .. math:: 0: Y_{2}^{-2}
 
@@ -47,9 +47,9 @@ the contribution of spherical harmonic :math:`i` to the cubic harmonic :math:`j`
 
 .. math:: \lvert d_j \rangle  = \sum_{i=0}^4 u_{d,(i,j)} \lvert Y_{d,i} \rangle, \; \mathrm{for} \; j \in \{0,1,2,3,4\},
 
-with 
+with
 
-.. math::  u_d =  \begin{bmatrix}  0  & \frac{1}{\sqrt{2}} & 0 & 0 & \frac{i}{\sqrt{2}}  \\ 0  & 0 & \frac{-i}{\sqrt{2}} & \frac{1}{\sqrt{2}} & 0 \\    1  & 0 & 0 & 0 & 0 \\     0  & 0 & \frac{-i}{\sqrt{2}} & \frac{-1}{\sqrt{2}} & 0 \\    0       & \frac{1}{\sqrt{2}}   & 0 & 0 & \frac{-i}{\sqrt{2}}  \end{bmatrix} 
+.. math::  u_d =  \begin{bmatrix}  0  & \frac{1}{\sqrt{2}} & 0 & 0 & \frac{i}{\sqrt{2}}  \\ 0  & 0 & \frac{-i}{\sqrt{2}} & \frac{1}{\sqrt{2}} & 0 \\    1  & 0 & 0 & 0 & 0 \\     0  & 0 & \frac{-i}{\sqrt{2}} & \frac{-1}{\sqrt{2}} & 0 \\    0       & \frac{1}{\sqrt{2}}   & 0 & 0 & \frac{-i}{\sqrt{2}}  \end{bmatrix}
 
 Note: :math:`u_d` is a unitary matrix, hence:
 
@@ -98,7 +98,7 @@ The p-cubic harmonics expressed in 3-d spherical harmonics:
 
 The ordering is the same as in RSPt.
 
-Let's order also the spherical harmonic orbitals (in the order it's done in RSPt): 
+Let's order also the spherical harmonic orbitals (in the order it's done in RSPt):
 
 .. math:: 0: Y_1^{-1}
 
@@ -115,9 +115,9 @@ spherical harmonics :math:`i` to the cubic harmonic :math:`j`:
 
 .. math:: \lvert d_j \rangle  = \sum_{i=0}^4 u_{p,(i,j)} \lvert Y_{p,i} \rangle, \; \mathrm{for} \; j \in \{0,1,2,3,4\},
 
-with 
+with
 
-.. math:: u_p =  \begin{bmatrix}    \frac{i}{\sqrt{2}}       & \frac{1}{\sqrt{2}} & 0  \\    0       & 0 & 1  \\     \frac{i}{\sqrt{2}}       & \frac{-1}{\sqrt{2}} & 0   \end{bmatrix} 
+.. math:: u_p =  \begin{bmatrix}    \frac{i}{\sqrt{2}}       & \frac{1}{\sqrt{2}} & 0  \\    0       & 0 & 1  \\     \frac{i}{\sqrt{2}}       & \frac{-1}{\sqrt{2}} & 0   \end{bmatrix}
 
 We can define a transformation matrix between cubic and spherical harmonics,
 as we did for the d-orbitals.
@@ -130,7 +130,7 @@ p- and d-orbitals.
 An observable with a d-oribtal as bra and a p-orbital as a ket can be
 expressed in cubic harmonics:
 
-.. math:: \tilde{A}_{i,j} = \langle d_i \lvert \hat{A} \rvert p_j \rangle = \sum_{k=0}^4 \bar{u}_{d,(k,i)} \langle Y_{d,k} \lvert \hat{A} \sum_{n=0}^2 u_{p,(n,j)} \lvert Y_{p,n} \rangle  \\ = \sum_{k,n} \bar{u}_{d,(k,i)} u_{p,(n,j)} \langle Y_{d,k} \lvert \hat{A} \rvert Y_{p,n} \rangle  = \sum_{k,n} \bar{u}_{d,(k,i)} A_{k,n} u_{p,(n,j)} \\ = \sum_{k=0}^4 (u_d^\dagger)_{(i,k)} \sum_{n=0}^2 A_{k,n} u_{p,(n,j)}, 
+.. math:: \tilde{A}_{i,j} = \langle d_i \lvert \hat{A} \rvert p_j \rangle = \sum_{k=0}^4 \bar{u}_{d,(k,i)} \langle Y_{d,k} \lvert \hat{A} \sum_{n=0}^2 u_{p,(n,j)} \lvert Y_{p,n} \rangle  \\ = \sum_{k,n} \bar{u}_{d,(k,i)} u_{p,(n,j)} \langle Y_{d,k} \lvert \hat{A} \rvert Y_{p,n} \rangle  = \sum_{k,n} \bar{u}_{d,(k,i)} A_{k,n} u_{p,(n,j)} \\ = \sum_{k=0}^4 (u_d^\dagger)_{(i,k)} \sum_{n=0}^2 A_{k,n} u_{p,(n,j)},
 
 which in matrix form becomes:
 
@@ -155,33 +155,33 @@ import sys
 
 def rotate(d, r_left, r_right):
     r"""
-    Return matrix rotated from left and right. 
-    
+    Return matrix rotated from left and right.
+
     Assumptions:
-    - Variable `d` to contain both spin channels 
+    - Variable `d` to contain both spin channels
     but with no spin off-diagonal elements.
     - Variables `r_left` and `r_right` contain only one spin channel.
     The other spin channel has to be the same.
-    
+
     Parameters
     ----------
     d : (N,M) array
         Spin-orbitals are ordered: 0dn, 0up, 1dn, 1up, ...
-    r_left : (N/2,N/2) array 
+    r_left : (N/2,N/2) array
     r_right : (M/2,M/2) array
 
     Returns
     -------
-    dp : (N,M) ndarray 
+    dp : (N,M) ndarray
         Spin-orbitals are ordered: 0dn, 0up, 1dn, 1up, ...
-    
+
     """
-    # Remove spin 
+    # Remove spin
     dm = d[::2, ::2]
-    # Rotate to spherical harmonics basis 
+    # Rotate to spherical harmonics basis
     # in the rotated coordinate system
     dmp = np.dot(np.transpose(np.conj(r_left)), np.dot(dm, r_right))
-    # Add spin 
+    # Add spin
     dp = np.zeros(2*np.array(np.shape(dmp)), dtype=np.complex)
     dp[::2, ::2] = dmp
     dp[1::2, 1::2] = dmp
@@ -190,7 +190,7 @@ def rotate(d, r_left, r_right):
 
 def get_spherical_2_cubic_matrix(spinpol=False, l=2):
     r"""
-    Return unitary ndarray for transforming from spherical 
+    Return unitary ndarray for transforming from spherical
     to cubic harmonics.
 
     Parameters
@@ -199,7 +199,7 @@ def get_spherical_2_cubic_matrix(spinpol=False, l=2):
         If transformation involves spin.
     l : integer
         Angular momentum number. p: l=1, d: l=2.
-    
+
     Returns
     -------
     u : (M,M) ndarray
@@ -207,7 +207,7 @@ def get_spherical_2_cubic_matrix(spinpol=False, l=2):
 
     Notes
     -----
-    Element :math:`u_{i,j}` represents the contribution of spherical 
+    Element :math:`u_{i,j}` represents the contribution of spherical
     harmonics :math:`i` to the cubic harmonic :math:`j`:
 
     .. math:: \lvert l_j \rangle  = \sum_{i=0}^4 u_{d,(i,j)} \lvert Y_{d,i} \rangle.
@@ -235,7 +235,7 @@ def get_spherical_2_cubic_matrix(spinpol=False, l=2):
     if spinpol:
         n, m = np.shape(u)
         uSpin = np.zeros((2*n, 2*m), dtype=np.complex)
-        uSpin[0:n, 0:m] = u
+        uSpin[:n, :m] = u
         uSpin[n:, m:] = u
         u = uSpin
     return u
@@ -243,16 +243,16 @@ def get_spherical_2_cubic_matrix(spinpol=False, l=2):
 
 def get_spinpol_and_ls(n, m):
     r"""
-    Calculate if spinpolarized and which angular momentum 
+    Calculate if spinpolarized and which angular momentum
     the matrix dimensions n,m corresponds to.
-    
+
     Parameters
     ----------
     n : integer
         Number of elements in the first dimension.
     m : integer
         Number of elements in the second dimension.
-        
+
     Returns
     -------
     spinpol : boolean
@@ -268,20 +268,20 @@ def get_spinpol_and_ls(n, m):
         spinpol = False
         ls = [(n-1)/2, (m-1)/2]
     return spinpol, ls
-    
-    
+
+
 def spherical_2_cubic(a):
     r"""
     Create the observable matrix expressed in cubic harmonics
     instead of spherical harmonics.
-    
+
     .. math:: \tilde{a} = u^\dagger a u.
 
     Parameters
     ----------
     a : matrix
         Observable, expressed in spherical harmonics.
-        
+
     Returns
     -------
     at : matrix
@@ -297,16 +297,16 @@ def spherical_2_cubic(a):
 
 def cubic_2_spherical(at):
     r"""
-    Create the observable matrix expressed in spherical 
+    Create the observable matrix expressed in spherical
     harmonics instead of cubic harmonics.
-    
+
     .. math:: a = u \tilde{a} u^\dagger.
 
     Parameters
     ----------
     at : matrix
          Observable, expressed in cubic harmonics.
-        
+
     Returns
     -------
     a : matrix

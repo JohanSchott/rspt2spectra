@@ -11,6 +11,7 @@ import numpy as np
 
 from rspt2spectra.constants import eV
 from rspt2spectra import readfile
+from rspt2spectra import orbitals
 from rspt2spectra import offdiagonal
 from rspt2spectra import energies
 from rspt2spectra import h2imp
@@ -114,8 +115,6 @@ for h, label in zip(hs, labels):
         print("Extract local H0 from cluster:", label)
         print()
         e_rspt = eV*(h - mu*np.eye(n_imp))
-        #e_rspt = eV*np.real(h.diagonal() - mu)
-
 print("RSPt's local hamiltonian")
 print(np.array_str(e_rspt, max_line_width=1000, precision=3,
                    suppress_small=True))
@@ -135,23 +134,30 @@ np.fill_diagonal(h[n_imp:, n_imp:], eb)
 h[n_imp:,:n_imp] = v
 h[:n_imp,n_imp:] = np.conj(v).T
 
-
 # Make sure Hamiltonian is hermitian
-assert np.sum(np.abs(h - np.conj(h.T))) < 1e-12
+assert np.sum(np.abs(h - np.conj(h.T))) < 1e-10
+# Get unitary transformation matrix.
+u = orbitals.get_u_transformation(np.shape(h)[0], r2s.basis_tag,
+                                  (n_imp//2-1)//2, irr_flag=r2s.irr_flag,
+                                  verbose_text=r2s.verbose_text)
+# Rotate (back) to spherical harmonics basis
+h_sph = np.dot(np.transpose(np.conj(u)), np.dot(h, u))
+# Make sure Hamiltonian is hermitian
+assert np.sum(np.abs(h_sph - np.conj(h_sph.T))) < 1e-10
 
 if r2s.verbose_text:
-    print("Dimensions of Hamiltonian:", np.shape(h))
+    print("Dimensions of Hamiltonian:", np.shape(h_sph))
     print("Hamiltonian in spherical harmonics basis:")
     print("Correlated block:")
     print("Real part:")
-    print(np.array_str(np.real(h[:n_imp, :n_imp]), precision=3,
+    print(np.array_str(np.real(h_sph[:n_imp, :n_imp]), precision=3,
                        suppress_small=True))
     print('Imag part:')
-    print(np.array_str(np.imag(h[:n_imp, :n_imp]), precision=3,
+    print(np.array_str(np.imag(h_sph[:n_imp, :n_imp]), precision=3,
                        suppress_small=True))
-    print("Number of non-zero elements in H:",len(np.flatnonzero(h)))
+    print("Number of non-zero elements in H:",len(np.flatnonzero(h_sph)))
 
-hOperator = h2imp.get_H_operator_from_dense_rspt_H_matrix(h,
+hOperator = h2imp.get_H_operator_from_dense_rspt_H_matrix(h_sph,
                                                           ang=(n_imp//2-1)//2)
 if r2s.verbose_text:
     print("Hamiltonian operator:")
@@ -160,6 +166,6 @@ if r2s.verbose_text:
     print()
     print('len(hOperator) = {:d}'.format(len(hOperator)))
     print('{:.3f} bath states per impurity spin-orbital.'.format(
-        (np.shape(h)[0] - n_imp)/n_imp))
-    print('{:d} bath states in total.'.format(np.shape(h)[0] - n_imp))
+        (np.shape(h_sph)[0] - n_imp)/n_imp))
+    print('{:d} bath states in total.'.format(np.shape(h_sph)[0] - n_imp))
 h2imp.write_to_file(hOperator, r2s.output_filename)

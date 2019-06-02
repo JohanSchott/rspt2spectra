@@ -393,52 +393,58 @@ if r2s.verbose_text:
     print()
     print("Correlated orbitals:")
     print("Real part:")
-    print(energies.print_matrix(h[:nc, :nc].real))
+    print(np.array_str(h[:nc, :nc].real, precision=3, suppress_small=True))
     print("Imag part:")
-    print(energies.print_matrix(h[:nc, :nc].imag))
+    print(np.array_str(h[:nc, :nc].imag, precision=3, suppress_small=True))
     print("First set of bath on-site energies:")
     print("Real part:")
-    print(energies.print_matrix(h[2*norb:2*norb + nc,
-                                  2*norb:2*norb + nc].real))
+    print(np.array_str(h[2*norb:2*norb + nc, 2*norb:2*norb + nc].real,
+                       precision=3, suppress_small=True))
     print("Imag part:")
-    print(energies.print_matrix(h[2*norb:2*norb + nc,
-                                  2*norb:2*norb + nc].imag))
+    print(np.array_str(h[2*norb:2*norb + nc, 2*norb:2*norb + nc].imag,
+                       precision=3, suppress_small=True))
     print()
     print("Eigenvalues of H:")
     eigenvalues, eigenvectors = np.linalg.eigh(h)
     print(eigenvalues)
 
-# Get unitary transformation matrix.
-u = orbitals.get_u_transformation(np.shape(h)[0], r2s.basis_tag, r2s.irr_flag,
-                                  r2s.spherical_bath_basis, r2s.spinpol, norb,
-                                  r2s.verbose_text)
-# Rotate (back) to spherical harmonics basis
-print('Rotate to spherical harmonics basis.')
-h_sph = np.dot(np.transpose(np.conj(u)), np.dot(h, u))
-
 # Make sure Hamiltonian is hermitian
-assert np.sum(np.abs(h_sph - np.conj(h_sph.T))) < 1e-12
+assert np.sum(np.abs(h - np.conj(h.T))) < 1e-10
+# Get unitary transformation matrix.
+u = orbitals.get_u_transformation(np.shape(h)[0], r2s.basis_tag, (norb-1)//2,
+                                  r2s.irr_flag, r2s.spherical_bath_basis,
+                                  r2s.spinpol, r2s.verbose_text)
+# Rotate (back) to spherical harmonics basis
+h_sph = np.dot(np.transpose(np.conj(u)), np.dot(h, u))
+# Make sure Hamiltonian is hermitian
+assert np.sum(np.abs(h_sph - np.conj(h_sph.T))) < 1e-10
 
 if r2s.verbose_text:
     print("Dimensions of Hamiltonian:", np.shape(h_sph))
     print("Hamiltonian in spherical harmonics basis:")
     print("Correlated block:")
     print("Real part:")
-    print(energies.print_matrix(np.real(h_sph[:2*norb, :2*norb])))
+    print(np.array_str(h_sph[:2*norb, :2*norb].real, precision=3,
+                       suppress_small=True))
     print('Imag part:')
-    print(energies.print_matrix(np.imag(h_sph[:2*norb, :2*norb])))
+    print(np.array_str(h_sph[:2*norb, :2*norb].imag, precision=3,
+                       suppress_small=True))
     print()
     print("First bath set:")
     print("Real part:")
-    print(energies.print_matrix(np.real(h_sph[2*norb:4*norb, 2*norb:4*norb])))
+    print(np.array_str(h_sph[2*norb:4*norb, 2*norb:4*norb].real, precision=3,
+                       suppress_small=True))
     print("Imag part:")
-    print(energies.print_matrix(np.imag(h_sph[2*norb:4*norb, 2*norb:4*norb])))
+    print(np.array_str(h_sph[2*norb:4*norb, 2*norb:4*norb].imag, precision=3,
+                       suppress_small=True))
     print()
     print("Hopping to first bath set:")
     print("Real part:")
-    print(energies.print_matrix(np.real(h_sph[2*norb:4*norb, :2*norb])))
+    print(np.array_str(h_sph[2*norb:4*norb, :2*norb].real, precision=3,
+                       suppress_small=True))
     print("Imag part:")
-    print(energies.print_matrix(np.imag(h_sph[2*norb:4*norb, :2*norb])))
+    print(np.array_str(h_sph[2*norb:4*norb, :2*norb].imag, precision=3,
+                       suppress_small=True))
     print()
     print("Number of non-zero elements in H:",len(np.flatnonzero(h_sph)))
 

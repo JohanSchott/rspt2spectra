@@ -29,6 +29,7 @@ basis_tag = '0102010100'
 # providing a projection file, use an empty string: ''
 # Examples:
 #irr_flag = 'Irr05'
+#irr_flag = ''
 irr_flag = ''
 
 # Distance above real axis.
