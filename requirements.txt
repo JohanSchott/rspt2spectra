@@ -1,0 +1,8 @@
+# Needed python packages
+numpy
+scipy
+numpydoc 
+sphinx 
+pytest
+matplotlib
+

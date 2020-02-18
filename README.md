@@ -8,9 +8,15 @@ A few scripts are stored in the `scripts` folder.
 Separately, in the module plotSpectra, a few functions for reading and plotting output from the Quanty software is provided.
 
 ## Preparations
-- Add the parent path of the folder `rspt2spectra` to the `PYTHONPATH` variable:
+- Execute the bash-script `setup.sh`:
 ```bash
-export PYTHONPATH=${PYTHONPATH}:path/to/folder
+./setup.sh
+```
+This will create a Python virtual environment and install the required Python packages.
+
+- Activate the virtual environment and set the PYTHONPATH by sourcing the bash-script `env.sh`:
+```bash
+source env.sh
 ```
 
 - Optionally, for convienience add the absolute path of the sub directory `rspt2spectra/scripts` to the `PATH` environment variable. This enables the Python scripts to be found, without having to specify the absolute path to the scripts. If this is desired, add the following to the `~/.bashrc`:
